@@ -115,7 +115,7 @@ fn (mut s Stack) set_size_for_stack_without_stack_children() {
 
 fn (mut s Stack) set_children_pos() {
 	mut ui := s.parent.get_ui()
-	_, parent_height := s.parent.size()
+	parent_width, parent_height := s.parent.size()
 	mut x := s.x
 	mut y := s.y
 	for mut child in s.children {
@@ -125,6 +125,10 @@ fn (mut s Stack) set_children_pos() {
 			child.set_pos(x, parent_height - s.height)
 		} else {
 			child.set_pos(x, y)
+		}
+		if s.horizontal_alignment == .right {
+			println(" right: $x $parent_width $child_width $s.width")
+			child.set_pos(parent_width - child_width, y)
 		}
 		if s.direction == .row {
 			width := s.width / s.children.len
