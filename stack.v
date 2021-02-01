@@ -36,6 +36,8 @@ mut:
 	stretch              bool
 	direction            Direction
 	margin               MarginConfig
+	children_width       int
+	children_height      int
 }
 
 /*
@@ -70,7 +72,7 @@ fn (mut s Stack) init(parent Layout) {
 	}
 
 	// Before setting children's positions, first set the size recursively for stack children without stack children
-	s.set_size_for_stack_without_stack_children()
+	s.set_children_size()
 
 	// Set all children's positions recursively
 	s.set_children_pos()
@@ -81,41 +83,9 @@ fn (mut s Stack) init(parent Layout) {
 	}
 }
 
-fn (mut s Stack) set_size_for_stack_without_stack_children() {
-	mut no_stack_children := true
-	mut h := 0
-	mut w := 0
-	for mut child in s.children {
-		if child is Stack {
-			no_stack_children = false
-			break
-		}
-		child_width, child_height := child.size()
-		if s.direction == .column {
-			h += child_height + s.spacing / 2
-			if child_width > w {
-				w = child_width
-			}
-		} else {
-			w += child_width + s.spacing / 2
-			if child_height > h {
-				h = child_height
-			}
-		}
-	}
-	if no_stack_children {
-		if s.width < w {
-			s.width = w
-		}
-		if s.height < h {
-			s.height = h
-		}
-	}
-}
-
 fn (mut s Stack) set_children_pos() {
 	mut ui := s.parent.get_ui()
-	parent_width, parent_height := s.parent.size()
+	_, parent_height := s.parent.size()
 	mut x := s.x
 	mut y := s.y
 	for mut child in s.children {
@@ -137,6 +107,33 @@ fn (mut s Stack) set_children_pos() {
 			child.set_children_pos()
 		}
 	}
+}
+
+
+fn (mut s Stack) set_children_size() {
+	mut h := 0
+	mut w := 0
+	for mut child in s.children {
+		if child is Stack  {
+			if child.children_width == 0 {
+				child.set_children_size()
+			}
+		}
+		child_width, child_height := child.size()
+		if s.direction == .column {
+			h += child_height + s.spacing / 2
+			if child_width > w {
+				w = child_width
+			}
+		} else {
+			w += child_width + s.spacing / 2
+			if child_height > h {
+				h = child_height
+			}
+		}
+	}
+	s.children_width = w
+	s.children_height = h
 }
 
 fn stack(c StackConfig, children []Widget) &Stack {
@@ -176,7 +173,15 @@ fn (mut s Stack) propose_size(w int, h int) (int, int) {
 }
 
 fn (s &Stack) size() (int, int) {
-	return s.width, s.height
+	mut w := s.width
+	mut h := s.height
+	if s.width < s.children_width {
+		w = s.children_width
+	}
+	if s.height < s.children_height {
+		h = s.children_height
+	}
+	return w, h
 }
 
 fn (mut s Stack) draw() {
