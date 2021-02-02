@@ -4,8 +4,8 @@ import gx
 import os
 
 const (
-	win_width   = 700
-	win_height  = 385
+	win_width   = 739  
+	win_height  = 425
 	nr_cols     = 4
 	cell_height = 25
 	cell_width  = 100
@@ -148,6 +148,7 @@ fn main() {
 				alignment: .right
 			}, [
 				ui.canvas(
+					width: 500
 					height: 275
 					draw_fn: canvas_draw
 				),

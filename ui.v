@@ -77,6 +77,8 @@ pub interface Widget {
 
 // pub fn iwidget(x Widget) Widget { return x }
 pub interface Layout {
+	height  int
+	width   int
 	get_ui() &UI
 	get_state() voidptr
 	size() (int, int)

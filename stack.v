@@ -3,6 +3,8 @@
 // that can be found in the LICENSE file.
 module ui
 
+import gx
+
 import eventbus
 
 enum Direction {
@@ -36,8 +38,8 @@ mut:
 	stretch              bool
 	direction            Direction
 	margin               MarginConfig
-	children_width       int
-	children_height      int
+	child_width       int
+	child_height      int
 }
 
 /*
@@ -51,16 +53,18 @@ Column & Row are identical except everything is reversed:
 fn (mut s Stack) init(parent Layout) {
 	s.parent = parent
 	mut ui := parent.get_ui()
-	parent_width, parent_height := parent.size()
 	s.ui = ui
+	//Not this since parent size is initialized at last position since potentially depending on children layout's sizes
+	//parent_width, parent_height := parent.size()
+	//parent.height and parent.width are first only depending on 
 	if s.stretch {
-		s.height = parent_height
-		s.width = parent_width
+		s.height = parent.height
+		s.width = parent.width
 	} else {
 		if s.direction == .column {
-			s.height = parent_height
+			s.height = parent.height
 		} else {
-			s.width = parent_width
+			s.width = parent.width
 		}
 	}
 	s.height -= s.margin.top + s.margin.bottom
@@ -72,7 +76,7 @@ fn (mut s Stack) init(parent Layout) {
 	}
 
 	// Before setting children's positions, first set the size recursively for stack children without stack children
-	s.set_children_size()
+	s.set_child_size()
 
 	// Set all children's positions recursively
 	s.set_children_pos()
@@ -109,31 +113,35 @@ fn (mut s Stack) set_children_pos() {
 	}
 }
 
-
-fn (mut s Stack) set_children_size() {
+fn (mut s Stack) set_child_size() {
 	mut h := 0
 	mut w := 0
 	for mut child in s.children {
 		if child is Stack  {
-			if child.children_width == 0 {
-				child.set_children_size()
+			if child.child_width == 0 {
+				child.set_child_size()
 			}
 		}
 		child_width, child_height := child.size()
 		if s.direction == .column {
-			h += child_height + s.spacing / 2
+			h += child_height
 			if child_width > w {
 				w = child_width
 			}
 		} else {
-			w += child_width + s.spacing / 2
+			w += child_width
 			if child_height > h {
 				h = child_height
 			}
 		}
 	}
-	s.children_width = w
-	s.children_height = h
+	if s.direction == .column {
+		h += (s.children.len - 1) * s.spacing
+	} else {
+		w += (s.children.len - 1) * s.spacing
+	}
+	s.child_width = w
+	s.child_height = h
 }
 
 fn stack(c StackConfig, children []Widget) &Stack {
@@ -175,12 +183,14 @@ fn (mut s Stack) propose_size(w int, h int) (int, int) {
 fn (s &Stack) size() (int, int) {
 	mut w := s.width
 	mut h := s.height
-	if s.width < s.children_width {
-		w = s.children_width
+	if s.width < s.child_width {
+		w = s.child_width
 	}
-	if s.height < s.children_height {
-		h = s.children_height
+	if s.height < s.child_height {
+		h = s.child_height
 	}
+	w += s.margin.left + s.margin.right
+	h += s.margin.top + s.margin.bottom
 	return w, h
 }
 
@@ -194,10 +204,22 @@ fn (mut s Stack) draw() {
 		// println('parent_height=$parent_height s.height= $s.height')
 		pos_y = parent_height - s.height
 	}
-	// s.ui.gg.draw_empty_rect(0, pos_y, 500, 30, gx.red) // for debugging
 	for child in s.children {
 		child.draw()
 	}
+	s.draw_bb()
+}
+
+fn (s &Stack) draw_bb() {
+	mut col := gx.red
+	if s.direction == .row {
+		col = gx.green
+	}
+	w,h:=s.size()
+	s.ui.gg.draw_empty_rect(s.x - s.margin.left, s.y  - s.margin.top, w, h,col)
+	s.ui.gg.draw_empty_rect(s.x, s.y, w - s.margin.left - s.margin.right, s.child_height - s.margin.top - s.margin.bottom,col)
+
+
 }
 
 fn (s &Stack) get_ui() &UI {
