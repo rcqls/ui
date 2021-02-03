@@ -144,3 +144,7 @@ fn (g &Group) get_subscriber() &eventbus.Subscriber {
 fn (g &Group) size() (int, int) {
 	return g.width, g.height
 }
+
+fn (g &Group) get_children() []Widget {
+	return g.children
+}

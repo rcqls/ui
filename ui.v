@@ -77,8 +77,7 @@ pub interface Widget {
 
 // pub fn iwidget(x Widget) Widget { return x }
 pub interface Layout {
-	height  int
-	width   int
+	spacing int
 	get_ui() &UI
 	get_state() voidptr
 	size() (int, int)
@@ -88,6 +87,7 @@ pub interface Layout {
 	// on_mousemove(MouseMoveFn)
 	draw()
 	resize(w int, h int)
+	get_children() []Widget
 }
 
 pub fn ilayout(x Layout) Layout {
@@ -241,4 +241,18 @@ pub fn open_url(url string) {
 
 pub fn confirm(s string) bool {
 	return false
+}
+
+// Tool to convert width and height from f32 to int
+pub fn convert_size_f32_to_int(width f32, height f32) (int, int) {
+	// Convert c.width and c.height from f32 to int used as a trick to deal with relative size with respect to parent 
+	mut w := int(width)
+	mut h := int(height)
+	if 0 < width && width <= 1 {
+		w = -int(width * 100) // to be converted in percentage of parent size inside init call
+	}
+	if 0 < height && height <= 1 {
+		w = -int(height * 100) // to be converted in percentage of parent size inside init call
+	}
+	return w, h
 }

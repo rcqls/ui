@@ -13,8 +13,8 @@ enum Direction {
 }
 
 struct StackConfig {
-	width                int
-	height               int
+	width                f32	// No more int to 
+	height               f32
 	vertical_alignment   VerticalAlignment
 	horizontal_alignment HorizontalAlignment
 	spacing              int
@@ -54,21 +54,36 @@ fn (mut s Stack) init(parent Layout) {
 	s.parent = parent
 	mut ui := parent.get_ui()
 	s.ui = ui
-	//Not this since parent size is initialized at last position since potentially depending on children layout's sizes
-	//parent_width, parent_height := parent.size()
-	//parent.height and parent.width are first only depending on 
+	println("init layout $s.width $s.height")
+	parent_width, parent_height := parent.size()
 	if s.stretch {
-		s.height = parent.height
-		s.width = parent.width
+		// I think this is bad because parent has many children
+		s.height = parent_height
+		s.width = parent_width
 	} else {
-		if s.direction == .column {
-			s.height = parent.height
-		} else {
-			s.width = parent.width
+		if s.width < 0 {
+			println("stack width neg")
+			percent := f32(-s.width) / 100
+			mut free_spacing := parent_width
+			println("stack width neg $free_spacing")
+			if s.direction == .row && s.parent is Stack {
+				free_spacing -= (s.parent.get_children().len - 1) * s.parent.spacing
+			}
+			println("stack width neg 2 $free_spacing")
+			s.width = int(percent * free_spacing)
+			println("stack width neg sw ${s.width}")
+		}
+		if s.height < 0 {
+			println("stack height neg")
+			percent := f32(-s.height) / 100
+			mut free_spacing := parent_height
+			if s.direction == .column && s.parent is Stack {
+				free_spacing -= (s.parent.get_children().len - 1) * s.parent.spacing
+			}
+			s.height = int(percent * free_spacing)
 		}
 	}
-	s.height -= s.margin.top + s.margin.bottom
-	s.width -= s.margin.left + s.margin.right
+
 	s.set_pos(s.x, ui.y_offset + s.y)
 	// Init all children recursively
 	for mut child in s.children {
@@ -77,6 +92,23 @@ fn (mut s Stack) init(parent Layout) {
 
 	// Before setting children's positions, first set the size recursively for stack children without stack children
 	s.set_adjusted_size()
+
+	// 
+	if s.direction == .column {
+		if s.height == 0 {
+			println("stack adjusted height")
+			s.height = s.adj_height
+		} 
+	} else {
+		if s.width == 0 {
+			println("stack adjusted width")
+			s.width = s.adj_width
+		}
+	}
+	s.height -= s.margin.top + s.margin.bottom
+	s.width -= s.margin.left + s.margin.right
+
+	println("stack size $s.width $s.height")
 
 	// Set all children's positions recursively
 	s.set_children_pos()
@@ -95,14 +127,17 @@ fn (mut s Stack) set_children_pos() {
 	for mut child in s.children {
 		child_width, child_height := child.size()
 		ui.y_offset = y
-		if s.vertical_alignment == .bottom {
-			child.set_pos(x, parent_height - s.height)
-		} else {
+		// if s.vertical_alignment == .bottom {
+		// 	child.set_pos(x, parent_height - s.height)
+		// } else {
 			child.set_pos(x, y)
-		}
+		// }
 		if s.direction == .row {
-			width := s.width / s.children.len
-			child.propose_size(width - s.spacing / 2, s.height)
+			// Commented the two lines below because not required imho
+			// Rmk: this is weird because this has to be an option: equally sized provided as an option
+			// But also it would be better placed in some function dedicated to communication between children and parent to determine their sizes
+			// width := (s.width - s.total_spacing())/ s.children.len
+			// child.propose_size(width, s.height)
 			x += child_width + s.spacing
 		} else {
 			y += child_height + s.spacing
@@ -124,30 +159,32 @@ fn (mut s Stack) set_adjusted_size() {
 		}
 		child_width, child_height := child.size()
 		if s.direction == .column {
-			h += child_height
-			if child_width > w {
+			h += child_height    // height of vertical stack means adding children's height
+			if child_width > w { // width of vertical stack means greatest children's width
 				w = child_width
 			}
 		} else {
-			w += child_width
-			if child_height > h {
+			w += child_width      // width of horizontal stack means adding children's width
+			if child_height > h { // height of horizontal stack means greatest children's height
 				h = child_height
 			}
 		}
 	}
+	// adding total spacing between children
 	if s.direction == .column {
-		h += (s.children.len - 1) * s.spacing
+		h += s.total_spacing()
 	} else {
-		w += (s.children.len - 1) * s.spacing
+		w += s.total_spacing()
 	}
 	s.adj_width = w
 	s.adj_height = h
 }
 
 fn stack(c StackConfig, children []Widget) &Stack {
+	w, h := convert_size_f32_to_int(c.width, c.height)
 	mut s := &Stack{
-		height: c.height
-		width: c.width
+		height: h
+		width: w
 		vertical_alignment: c.vertical_alignment
 		horizontal_alignment: c.horizontal_alignment
 		spacing: c.spacing
@@ -217,9 +254,12 @@ fn (s &Stack) draw_bb() {
 	}
 	w,h:=s.size()
 	s.ui.gg.draw_empty_rect(s.x - s.margin.left, s.y  - s.margin.top, w, h,col)
-	s.ui.gg.draw_empty_rect(s.x, s.y, w - s.margin.left - s.margin.right, s.adj_height - s.margin.top - s.margin.bottom,col)
+	s.ui.gg.draw_empty_rect(s.x, s.y, w - s.margin.left - s.margin.right, h - s.margin.top - s.margin.bottom,col)
+}
 
-
+fn (s &Stack) total_spacing() int {
+	total_spacing := (s.children.len - 1) * s.spacing
+	return total_spacing
 }
 
 fn (s &Stack) get_ui() &UI {
@@ -257,4 +297,8 @@ fn (s &Stack) is_focused() bool {
 }
 
 fn (s &Stack) resize(width int, height int) {
+}
+
+fn (s &Stack) get_children() []Widget {
+	return s.children
 }

@@ -13,8 +13,6 @@ const (
 	default_font_size    = 13
 )
 
-pub type DrawFn = fn (ctx &gg.Context, state voidptr)
-
 pub type ClickFn = fn (e MouseEvent, window &Window)
 
 pub type KeyFn = fn (e KeyEvent, func voidptr)
@@ -59,6 +57,7 @@ pub mut:
 	// adjusted size generally depending on children
 	adj_width    int 
 	adj_height   int
+	spacing      int // ununsed for Window but required for Layout (Stack precisely)
 }
 
 pub struct WindowConfig {
@@ -170,7 +169,7 @@ fn gg_init(mut window Window) {
 		*/
 		child.init(window)
 	}
-	window.set_adjusted_size()
+	//window.set_adjusted_size()
 }
 
 pub fn window(cfg WindowConfig, children []Widget) &Window {
@@ -769,4 +768,8 @@ fn (mut w Window) set_adjusted_size() {
 	}
 	w.adj_width  = width
 	w.adj_height = height
+}
+
+fn (w &Window) get_children() []Widget {
+	return w.children
 }
