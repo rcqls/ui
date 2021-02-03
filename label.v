@@ -36,13 +36,15 @@ fn (mut l Label) set_pos(x int, y int) {
 }
 
 fn (mut l Label) size() (int, int) {
-	w, h := l.ui.gg.text_size(l.text)
+	mut w, mut h := l.ui.gg.text_size(l.text)
 	// RCqls: Not Sure at all, just a guess visiting fontstash
-	//h2 := int(f32(h) //* l.ui.gg.scale * l.ui.gg.scale)
-	//println("label size: $w $h2")
-	
-	// First return the width, then the height multiplied by line count.
-	//w2 := int(f32(w) * l.ui.gg.scale * l.ui.gg.scale)
+	$if macos {
+		h = int(f32(h) * l.ui.gg.scale) //* l.ui.gg.scale)
+		//println("label size: $w $h2")
+		
+		// First return the width, then the height multiplied by line count.
+		w = int(f32(w) * l.ui.gg.scale) //* l.ui.gg.scale)
+	}
 	return w, h * l.text.split('\n').len 
 }
 

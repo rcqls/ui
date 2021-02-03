@@ -61,27 +61,27 @@ fn (mut s Stack) init(parent Layout) {
 		s.height = parent_height
 		s.width = parent_width
 	} else {
-		if s.width < 0 {
-			println("stack width neg")
-			percent := f32(-s.width) / 100
-			mut free_spacing := parent_width
-			println("stack width neg $free_spacing")
-			if s.direction == .row && s.parent is Stack {
-				free_spacing -= (s.parent.get_children().len - 1) * s.parent.spacing
-			}
-			println("stack width neg 2 $free_spacing")
-			s.width = int(percent * free_spacing)
-			println("stack width neg sw ${s.width}")
+		children_spacing := if ((s.width < 0 && s.direction == .row) || (s.height < 0 && s.direction == .column)) && s.parent is Stack {
+			(s.parent.get_children().len - 1) * s.parent.spacing
+		} else {
+			0
 		}
-		if s.height < 0 {
-			println("stack height neg")
-			percent := f32(-s.height) / 100
-			mut free_spacing := parent_height
-			if s.direction == .column && s.parent is Stack {
-				free_spacing -= (s.parent.get_children().len - 1) * s.parent.spacing
-			}
-			s.height = int(percent * free_spacing)
-		}
+		// if s.width < 0 {
+		// 	println("stack width neg")
+		// 	percent := f32(-s.width) / 100
+		// 	free_size := parent_width - children_spacing
+		// 	println("stack width neg $free_size")
+		// 	s.width = int(percent * free_size)
+		// 	println("stack width neg sw ${s.width}")
+		// }
+		s.width = relative_size_from_parent(s.width, parent_width, children_spacing)
+		// if s.height < 0 {
+		// 	println("stack height neg")
+		// 	percent := f32(-s.height) / 100
+		// 	free_size := parent_height - children_spacing
+		// 	s.height = int(percent * free_size)
+		// }
+		s.height = relative_size_from_parent(s.height, parent_height, children_spacing)
 	}
 
 	s.set_pos(s.x, ui.y_offset + s.y)

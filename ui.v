@@ -256,3 +256,14 @@ pub fn convert_size_f32_to_int(width f32, height f32) (int, int) {
 	}
 	return w, h
 }
+
+// if size is negative, it is relative in percentage of the parent 
+pub fn relative_size_from_parent(size int, parent_size int, spacing int) int {
+	return if size < 0 {
+		percent := f32(-size) / 100
+		free_size := parent_size - spacing
+		int(percent * free_size)
+	} else {
+		size
+	}
+}
