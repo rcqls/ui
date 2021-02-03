@@ -56,8 +56,9 @@ pub mut:
 	eventbus      &eventbus.EventBus = eventbus.new()
 	// resizable has limitation https://github.com/vlang/ui/issues/231
 	resizable bool // currently only for events.on_resized not modify children
-	child_width   int
-	child_height  int
+	// adjusted size generally depending on children
+	adj_width    int 
+	adj_height   int
 }
 
 pub struct WindowConfig {
@@ -169,7 +170,7 @@ fn gg_init(mut window Window) {
 		*/
 		child.init(window)
 	}
-	window.set_size_from_child()
+	window.set_adjusted_size()
 }
 
 pub fn window(cfg WindowConfig, children []Widget) &Window {
@@ -730,11 +731,11 @@ pub fn (w &Window) get_subscriber() &eventbus.Subscriber {
 fn (w &Window) size() (int, int) {
 	mut width := w.width
 	mut height := w.height
-	if w.width < w.child_width {
-		width = w.child_width
+	if w.width < w.adj_width {
+		width = w.adj_width
 	}
-	if w.height < w.child_height {
-		height = w.child_height
+	if w.height < w.adj_height {
+		height = w.adj_height
 	}
 	return width, height
 }
@@ -751,12 +752,12 @@ fn (window &Window) unfocus_all() {
 	}
 }
 
-fn (mut w Window) set_size_from_child() {
+fn (mut w Window) set_adjusted_size() {
 	mut width := 0
 	mut height := 0
 	for mut child in w.children {
 		if child is Stack {
-			child.set_child_size()
+			child.set_adjusted_size()
 			child_width, child_height := child.size()
 			if child_width > width {
 				width = child_width
@@ -766,6 +767,6 @@ fn (mut w Window) set_size_from_child() {
 			}
 		}
 	}
-	w.child_width  = width
-	w.child_height = height
+	w.adj_width  = width
+	w.adj_height = height
 }

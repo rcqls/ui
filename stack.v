@@ -38,8 +38,8 @@ mut:
 	stretch              bool
 	direction            Direction
 	margin               MarginConfig
-	child_width       int
-	child_height      int
+	adj_width            int
+	adj_height           int
 }
 
 /*
@@ -76,7 +76,7 @@ fn (mut s Stack) init(parent Layout) {
 	}
 
 	// Before setting children's positions, first set the size recursively for stack children without stack children
-	s.set_child_size()
+	s.set_adjusted_size()
 
 	// Set all children's positions recursively
 	s.set_children_pos()
@@ -113,13 +113,13 @@ fn (mut s Stack) set_children_pos() {
 	}
 }
 
-fn (mut s Stack) set_child_size() {
+fn (mut s Stack) set_adjusted_size() {
 	mut h := 0
 	mut w := 0
 	for mut child in s.children {
 		if child is Stack  {
-			if child.child_width == 0 {
-				child.set_child_size()
+			if child.adj_width == 0 {
+				child.set_adjusted_size()
 			}
 		}
 		child_width, child_height := child.size()
@@ -140,8 +140,8 @@ fn (mut s Stack) set_child_size() {
 	} else {
 		w += (s.children.len - 1) * s.spacing
 	}
-	s.child_width = w
-	s.child_height = h
+	s.adj_width = w
+	s.adj_height = h
 }
 
 fn stack(c StackConfig, children []Widget) &Stack {
@@ -183,11 +183,11 @@ fn (mut s Stack) propose_size(w int, h int) (int, int) {
 fn (s &Stack) size() (int, int) {
 	mut w := s.width
 	mut h := s.height
-	if s.width < s.child_width {
-		w = s.child_width
+	if s.width < s.adj_width {
+		w = s.adj_width
 	}
-	if s.height < s.child_height {
-		h = s.child_height
+	if s.height < s.adj_height {
+		h = s.adj_height
 	}
 	w += s.margin.left + s.margin.right
 	h += s.margin.top + s.margin.bottom
@@ -217,7 +217,7 @@ fn (s &Stack) draw_bb() {
 	}
 	w,h:=s.size()
 	s.ui.gg.draw_empty_rect(s.x - s.margin.left, s.y  - s.margin.top, w, h,col)
-	s.ui.gg.draw_empty_rect(s.x, s.y, w - s.margin.left - s.margin.right, s.child_height - s.margin.top - s.margin.bottom,col)
+	s.ui.gg.draw_empty_rect(s.x, s.y, w - s.margin.left - s.margin.right, s.adj_height - s.margin.top - s.margin.bottom,col)
 
 
 }
