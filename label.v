@@ -36,16 +36,20 @@ fn (mut l Label) set_pos(x int, y int) {
 }
 
 fn (mut l Label) size() (int, int) {
-	mut w, mut h := l.ui.gg.text_size(l.text)
-	// RCqls: Not Sure at all, just a guess visiting fontstash
-	$if macos {
-		h = int(f32(h) * l.ui.gg.scale) //* l.ui.gg.scale)
-		//println("label size: $w $h2")
-		
-		// First return the width, then the height multiplied by line count.
-		w = int(f32(w) * l.ui.gg.scale) //* l.ui.gg.scale)
+	if l.ui != 0 {
+		mut w, mut h := l.ui.gg.text_size(l.text)
+		// RCqls: Not Sure at all, just a guess visiting fontstash
+		$if macos {
+			h = int(f32(h) * l.ui.gg.scale * l.ui.gg.scale)
+			//println("label size: $w $h2")
+			
+			// First return the width, then the height multiplied by line count.
+			w = int(f32(w) * l.ui.gg.scale * l.ui.gg.scale)
+		}
+		return w, h * l.text.split('\n').len 
+	} else {
+		return 0, 0
 	}
-	return w, h * l.text.split('\n').len 
 }
 
 fn (mut l Label) propose_size(w int, h int) (int, int) {
@@ -79,4 +83,8 @@ fn (l &Label) point_inside(x f64, y f64) bool {
 
 pub fn (mut l Label) set_text(s string) {
 	l.text = s
+}
+
+pub fn (mut l Label) set_ui(ui &UI) {
+	l.ui = ui
 }

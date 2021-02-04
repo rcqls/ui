@@ -262,7 +262,9 @@ pub fn relative_size_from_parent(size int, parent_size int, spacing int) int {
 	return if size < 0 {
 		percent := f32(-size) / 100
 		free_size := parent_size - spacing
-		int(percent * free_size)
+		new_size := int(percent * free_size)
+		println("relative size: $size $new_size -> $percent * ($parent_size - $spacing) ")
+		new_size
 	} else {
 		size
 	}

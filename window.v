@@ -169,7 +169,6 @@ fn gg_init(mut window Window) {
 		*/
 		child.init(window)
 	}
-	//window.set_adjusted_size()
 }
 
 pub fn window(cfg WindowConfig, children []Widget) &Window {
@@ -180,6 +179,7 @@ pub fn window(cfg WindowConfig, children []Widget) &Window {
 	}
 	*/
 	C.printf('window() state =%p \n', cfg.state)
+	println("size: $cfg.width $cfg.height")
 	mut window := &Window{
 		state: cfg.state
 		draw_fn: cfg.draw_fn
@@ -253,6 +253,14 @@ pub fn window(cfg WindowConfig, children []Widget) &Window {
 	*/
 	// q := int(window)
 	// println('created window $q.hex()')
+	
+	// Here is a good place to 
+	// for mut child in window.children {
+	// 	set_ui(mut child,window.ui)
+	// }
+
+	window.set_adjusted_size(0)
+	println("adjusted size: $window.width -> $window.adj_width $window.height -> $window.adj_height")
 	return window
 }
 
@@ -751,19 +759,29 @@ fn (window &Window) unfocus_all() {
 	}
 }
 
-fn (mut w Window) set_adjusted_size() {
+fn (mut w Window) set_adjusted_size(i int) {
 	mut width := 0
 	mut height := 0
 	for mut child in w.children {
-		if child is Stack {
-			child.set_adjusted_size()
-			child_width, child_height := child.size()
-			if child_width > width {
-				width = child_width
+		mut child_width, mut child_height := 0, 0
+		if child is Stack  {
+			if child.adj_width == 0 {
+				child.set_adjusted_size(i + 1, w.ui)
 			}
-			if child_height > height {
-				height = child_height
+			child_width, child_height = child.adj_width + child.margin.left + child.margin.right, child.adj_height + child.margin.top + child.margin.bottom
+		} else {
+			if child is Label {
+				child.set_ui(w.ui)
 			}
+			child_width, child_height = child.size()
+		}
+		println("$i => child_width, child_height: $child_width, $child_height")
+
+		if child_width > width {
+			width = child_width
+		}
+		if child_height > height {
+			height = child_height
 		}
 	}
 	w.adj_width  = width
@@ -773,3 +791,12 @@ fn (mut w Window) set_adjusted_size() {
 fn (w &Window) get_children() []Widget {
 	return w.children
 }
+
+// fn set_ui(mut w Widget, ui &UI) {
+// 	w.ui = ui
+// 	if w is Stack {
+// 		for mut child in w.children {
+// 			set_ui(mut child, ui)
+// 		}
+// 	}
+// }

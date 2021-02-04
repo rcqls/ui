@@ -40,6 +40,7 @@ mut:
 	margin               MarginConfig
 	adj_width            int
 	adj_height           int
+	spacings             []int
 }
 
 /*
@@ -54,22 +55,15 @@ fn (mut s Stack) init(parent Layout) {
 	s.parent = parent
 	mut ui := parent.get_ui()
 	s.ui = ui
-	println("init layout $s.width $s.height")
-	parent_width, parent_height := parent.size()
-	if s.stretch {
-		// I think this is bad because parent has many children
-		s.height = parent_height
-		s.width = parent_width
-	} else {
-		children_spacing := if ((s.width < 0 && s.direction == .row) || (s.height < 0 && s.direction == .column)) && s.parent is Stack {
-			(s.parent.get_children().len - 1) * s.parent.spacing
-		} else {
-			0
-		}
-		s.width = relative_size_from_parent(s.width, parent_width, children_spacing)
-		s.height = relative_size_from_parent(s.height, parent_height, children_spacing)
-	}
 
+	parent_width, parent_height := parent.size()
+	println("init parent $parent_width, $parent_height $s.width $s.height")
+	
+	// Decode width and height to extend relative
+	s.decode_size(parent)
+
+	println("init2 parent $parent_width, $parent_height")
+	
 	s.set_pos(s.x, s.y)
 	// Init all children recursively
 	for mut child in s.children {
@@ -77,13 +71,13 @@ fn (mut s Stack) init(parent Layout) {
 	}
 
 	// Before setting children's positions, first set the size recursively for stack children without stack children
-	s.set_adjusted_size()
+	//s.set_adjusted_size()
 
 	// if s.direction == .column {
 		if s.height == 0 {
 			//println("stack adjusted height")
 			s.height = s.adj_height
-			println("stack adjusted height $s.adj_height $s.adj_width")
+			println("stack adjusted height $s.adj_height $s.adj_width ($parent_width, $parent_height)")
 		} else {
 			s.height -= s.margin.top + s.margin.bottom
 		}
@@ -146,11 +140,6 @@ fn (s &Stack) set_child_pos(mut child Widget, x int, y int) {
 	// TODO: alignment in the direct direction
 	// (for these different cases, container size in the direct direction is more complicated to compute)
 	
-	// Keep it for general alignment
-	// mut x_offset := 0
-	// mut y_offset := 0
-	// mut container_width := s.width
-	// mut container_height := s.height
 	child_width, child_height := child.size()
 	if s.direction == .column {
 		container_width := s.width
@@ -201,7 +190,11 @@ fn (s &Stack) set_child_pos(mut child Widget, x int, y int) {
 		println("y_offset $y_offset $container_height $child_height")
 		child.set_pos(x , y + y_offset)
 	}
-
+	// Keep it for general alignment
+	// mut x_offset := 0
+	// mut y_offset := 0
+	// mut container_width := s.width
+	// mut container_height := s.height
 	// Keep it here, for more general alignment
 	// if s.vertical_alignment == .top {
 	// 	if s.horizontal_alignment == .left {
@@ -232,16 +225,46 @@ fn (s &Stack) set_child_pos(mut child Widget, x int, y int) {
 	
 }
 
-fn (mut s Stack) set_adjusted_size() {
+fn (mut s Stack) decode_size(parent Layout) {
+	println("init layout $s.width $s.height")
+	parent_width, parent_height := parent.size()
+	println("parent $parent_width, $parent_height")
+	if s.stretch {
+		// I think this is bad because parent has many children
+		s.height = parent_height
+		s.width = parent_width
+	} else {
+		children_spacing := if ((s.width < 0 && s.direction == .row) || (s.height < 0 && s.direction == .column)) && s.parent is Stack {
+			(s.parent.get_children().len - 1) * s.parent.spacing
+		} else {
+			0
+		}
+		println("neg width: $s.width neg height: $s.height")
+		s.width = relative_size_from_parent(s.width, parent_width, children_spacing)
+		s.height = relative_size_from_parent(s.height, parent_height, children_spacing)
+		println("neg2 width: $s.width neg height: $s.height")
+	}
+}
+
+fn (mut s Stack) set_adjusted_size(i int, ui &UI) {
 	mut h := 0
 	mut w := 0
 	for mut child in s.children {
+		mut child_width, mut child_height := 0, 0
 		if child is Stack  {
 			if child.adj_width == 0 {
-				child.set_adjusted_size()
+				child.set_adjusted_size(i + 1, ui)
 			}
+			child_width, child_height = child.adj_width + child.margin.left + child.margin.right, child.adj_height + child.margin.top + child.margin.bottom
+		} else {
+			if child is Label {
+				child.set_ui(ui)
+			}
+			child_width, child_height = child.size()
 		}
-		child_width, child_height := child.size()
+		println("$i => child_width, child_height: $child_width, $child_height")
+		//child_width, child_height := child.size()
+		//child_width, child_height := child.adj_width, child.adj_height
 		if s.direction == .column {
 			h += child_height    // height of vertical stack means adding children's height
 			if child_width > w { // width of vertical stack means greatest children's width
@@ -328,7 +351,7 @@ fn (mut s Stack) draw() {
 	for child in s.children {
 		child.draw()
 	}
-	//s.draw_bb()
+	s.draw_bb()
 }
 
 fn (s &Stack) draw_bb() {
