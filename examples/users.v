@@ -144,10 +144,11 @@ fn main() {
 				]),
 			]),
 			ui.column({
-				stretch: true
+				//stretch: true
 				alignment: .right
 			}, [
 				ui.canvas(
+					width: 500
 					height: 275
 					draw_fn: canvas_draw
 				),

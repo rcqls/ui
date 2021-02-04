@@ -775,7 +775,7 @@ fn (mut w Window) set_adjusted_size(i int) {
 			}
 			child_width, child_height = child.size()
 		}
-		println("$i => child_width, child_height: $child_width, $child_height")
+		println("$i ${child.name()} => child_width, child_height: $child_width, $child_height")
 
 		if child_width > width {
 			width = child_width
@@ -792,11 +792,75 @@ fn (w &Window) get_children() []Widget {
 	return w.children
 }
 
-// fn set_ui(mut w Widget, ui &UI) {
-// 	w.ui = ui
-// 	if w is Stack {
-// 		for mut child in w.children {
-// 			set_ui(mut child, ui)
-// 		}
-// 	}
-// }
+// Mainly useful for debugging
+pub fn (w &Stack) name() string {
+	return if w.direction == .row {
+				'Row'
+			} else {
+				'Column'
+			}
+}
+
+pub fn (w &Group) name() string {
+	return 'Group'
+} 
+
+pub fn (w &TextBox) name() string {
+	return 'TextBox'
+} 
+
+pub fn (w &ListBox) name() string {
+	return 'ListBox'
+}
+
+pub fn (w &Label) name() string {
+	return 'Label'
+} 
+
+pub fn (w &Radio) name() string {
+	return 'Radio'
+} 
+
+pub fn (w &Canvas) name() string {
+	return 'Canvas'
+}
+
+pub fn (w &ProgressBar) name() string {
+	return 'ProgressBar'
+} 
+
+pub fn (w &Button) name() string {
+	return 'Button'
+} 
+
+pub fn (w &Rectangle) name() string {
+	return 'Rectangle'
+}
+
+pub fn (w &Switch) name() string {
+	return 'Switch'
+} 
+
+pub fn (w &Transition) name() string {
+	return 'Transition'
+} 
+
+pub fn (w &Dropdown) name() string {
+	return 'Dropdown'
+}
+
+pub fn (w &Menu) name() string {
+	return 'Menu'
+} 
+
+pub fn (w &Picture) name() string {
+	return 'Picture'
+} 
+
+pub fn (w &CheckBox) name() string {
+	return 'CheckBox'
+}
+
+pub fn (w &Slider) name() string {
+	return 'Slider'
+} 

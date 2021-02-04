@@ -163,7 +163,7 @@ fn (s &Stack) set_child_pos(mut child Widget, x int, y int) {
 				 }
 			}
 		}
-		println("x_offset $x_offset $container_width $child_width")
+		println("x_offset ${child.name()}: $s.horizontal_alignment $x_offset $container_width $child_width")
 		child.set_pos(x + x_offset, y)
 	} else {
 		container_height := s.height
@@ -187,7 +187,7 @@ fn (s &Stack) set_child_pos(mut child Widget, x int, y int) {
 				 }
 			}
 		}
-		println("y_offset $y_offset $container_height $child_height")
+		println("y_offset ${child.name()}: $y_offset $container_height $child_height")
 		child.set_pos(x , y + y_offset)
 	}
 	// Keep it for general alignment
@@ -262,7 +262,7 @@ fn (mut s Stack) set_adjusted_size(i int, ui &UI) {
 			}
 			child_width, child_height = child.size()
 		}
-		println("$i => child_width, child_height: $child_width, $child_height")
+		println("$i ${child.name()} => child_width, child_height: $child_width, $child_height")
 		//child_width, child_height := child.size()
 		//child_width, child_height := child.adj_width, child.adj_height
 		if s.direction == .column {
