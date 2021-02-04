@@ -5,13 +5,14 @@ module ui
 
 pub struct RowConfig {
 pub:
-	width     f32
-	height    f32
-	alignment VerticalAlignment
-	spacing   int
-	stretch   bool
-	margin    MarginConfig
-	children  []Widget
+	width      f32
+	height     f32
+	alignment  VerticalAlignment
+	alignments VerticalAlignments
+	spacing    int
+	stretch    bool
+	margin     MarginConfig
+	children   []Widget
 }
 
 pub fn row(c RowConfig, children []Widget) &Stack {
@@ -23,5 +24,6 @@ pub fn row(c RowConfig, children []Widget) &Stack {
 		stretch: c.stretch
 		direction: .row
 		margin: c.margin
+		vertical_alignments: c.alignments
 	}, children)
 }

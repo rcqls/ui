@@ -13,34 +13,38 @@ enum Direction {
 }
 
 struct StackConfig {
-	width                f32	// No more int to 
-	height               f32
-	vertical_alignment   VerticalAlignment
-	horizontal_alignment HorizontalAlignment
-	spacing              int
-	stretch              bool
-	direction            Direction
-	margin               MarginConfig
+	width                 f32	// No more int to 
+	height                f32
+	vertical_alignment    VerticalAlignment
+	horizontal_alignment  HorizontalAlignment
+	spacing               int
+	stretch               bool
+	direction             Direction
+	margin                MarginConfig
+	vertical_alignments   VerticalAlignments
+	horizontal_alignments HorizontalAlignments
 }
 
 struct Stack {
 mut:
-	x                    int
-	y                    int
-	width                int
-	height               int
-	children             []Widget
-	parent               Layout
-	ui                   &UI
-	vertical_alignment   VerticalAlignment
-	horizontal_alignment HorizontalAlignment
-	spacing              int
-	stretch              bool
-	direction            Direction
-	margin               MarginConfig
-	adj_width            int
-	adj_height           int
-	spacings             []int
+	x                     int
+	y                     int
+	width                 int
+	height                int
+	children              []Widget
+	parent                Layout
+	ui                    &UI
+	vertical_alignment    VerticalAlignment
+	horizontal_alignment  HorizontalAlignment
+	spacing               int
+	stretch               bool
+	direction             Direction
+	margin                MarginConfig
+	adj_width             int
+	adj_height            int
+	spacings              []int
+	vertical_alignments   VerticalAlignments
+	horizontal_alignments HorizontalAlignments
 }
 
 /*
@@ -105,26 +109,12 @@ fn (mut s Stack) init(parent Layout) {
 }
 
 fn (mut s Stack) set_children_pos() {
-	//mut ui := s.parent.get_ui()
-	//_, parent_height := s.parent.size()
 	mut x := s.x
 	mut y := s.y
-	for mut child in s.children {
+	for i, mut child in s.children {
 		child_width, child_height := child.size()
-		// ui.x_offset = x
-		// ui.y_offset = y
-		// if s.vertical_alignment == .bottom {
-		// 	child.set_pos(x, parent_height - s.height)
-		// } else {
-			//child.set_pos(x, y)
-			s.set_child_pos(child, x, y)
-		// }
+		s.set_child_pos(child, i, x, y)
 		if s.direction == .row {
-			// Commented the two lines below because not required imho
-			// Rmk: this is weird because this has to be an option: equally sized provided as an option
-			// But also it would be better placed in some function dedicated to communication between children and parent to determine their sizes
-			// width := (s.width - s.total_spacing())/ s.children.len
-			// child.propose_size(width, s.height)
 			x += child_width + s.spacing
 		} else {
 			y += child_height + s.spacing
@@ -135,7 +125,7 @@ fn (mut s Stack) set_children_pos() {
 	}
 }
 
-fn (s &Stack) set_child_pos(mut child Widget, x int, y int) {
+fn (s &Stack) set_child_pos(mut child Widget, i int, x int, y int) {
 	// Only alignment along the opposite direction (ex: .row if direction is .column and vice-versa) is considered
 	// TODO: alignment in the direct direction
 	// (for these different cases, container size in the direct direction is more complicated to compute)
@@ -144,7 +134,7 @@ fn (s &Stack) set_child_pos(mut child Widget, x int, y int) {
 	if s.direction == .column {
 		container_width := s.width
 		mut x_offset := 0
-		match s.horizontal_alignment {
+		match s.get_horizontal_alignment(i) {
 			.left {
 				x_offset = 0
 			}	
@@ -168,7 +158,7 @@ fn (s &Stack) set_child_pos(mut child Widget, x int, y int) {
 	} else {
 		container_height := s.height
 		mut y_offset := 0
-		match s.vertical_alignment {
+		match s.get_vertical_alignment(i) {
 			.top {
 				y_offset = 0
 			}	
@@ -299,6 +289,8 @@ fn stack(c StackConfig, children []Widget) &Stack {
 		direction: c.direction
 		margin: c.margin
 		children: children
+		vertical_alignments: c.vertical_alignments
+		horizontal_alignments: c.horizontal_alignments
 		ui: 0
 	}
 	return s
@@ -339,15 +331,6 @@ fn (s &Stack) size() (int, int) {
 }
 
 fn (mut s Stack) draw() {
-	// child_len := s.children.len
-	// total_spacing := (child_len - 1) * s.spacing
-	mut pos_y := s.y
-	if s.vertical_alignment == .bottom {
-		// Move the stack to the bottom. First find the biggest height.
-		_, parent_height := s.parent.size()
-		// println('parent_height=$parent_height s.height= $s.height')
-		pos_y = parent_height - s.height
-	}
 	for child in s.children {
 		child.draw()
 	}
@@ -408,4 +391,28 @@ fn (s &Stack) resize(width int, height int) {
 
 fn (s &Stack) get_children() []Widget {
 	return s.children
+}
+
+fn (s &Stack) get_vertical_alignment(i int) VerticalAlignment {
+	mut align := s.vertical_alignment
+	if i in s.vertical_alignments.top {
+		align = .top
+	} else if i in s.vertical_alignments.center {
+		align = .center
+	} else if i in s.vertical_alignments.bottom {
+		align = .bottom
+	}
+	return align
+}
+
+fn (s &Stack) get_horizontal_alignment(i int) HorizontalAlignment {
+	mut align := s.horizontal_alignment
+	if i in s.horizontal_alignments.left {
+		align = .left
+	} else if i in s.horizontal_alignments.center {
+		align = .center
+	} else if i in s.horizontal_alignments.right {
+		align = .right
+	}
+	return align
 }
