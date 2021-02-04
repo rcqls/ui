@@ -66,25 +66,11 @@ fn (mut s Stack) init(parent Layout) {
 		} else {
 			0
 		}
-		// if s.width < 0 {
-		// 	println("stack width neg")
-		// 	percent := f32(-s.width) / 100
-		// 	free_size := parent_width - children_spacing
-		// 	println("stack width neg $free_size")
-		// 	s.width = int(percent * free_size)
-		// 	println("stack width neg sw ${s.width}")
-		// }
 		s.width = relative_size_from_parent(s.width, parent_width, children_spacing)
-		// if s.height < 0 {
-		// 	println("stack height neg")
-		// 	percent := f32(-s.height) / 100
-		// 	free_size := parent_height - children_spacing
-		// 	s.height = int(percent * free_size)
-		// }
 		s.height = relative_size_from_parent(s.height, parent_height, children_spacing)
 	}
 
-	s.set_pos(s.x, ui.y_offset + s.y)
+	s.set_pos(s.x, s.y)
 	// Init all children recursively
 	for mut child in s.children {
 		child.init(s)
@@ -93,22 +79,27 @@ fn (mut s Stack) init(parent Layout) {
 	// Before setting children's positions, first set the size recursively for stack children without stack children
 	s.set_adjusted_size()
 
-	// 
-	if s.direction == .column {
+	// if s.direction == .column {
 		if s.height == 0 {
-			println("stack adjusted height")
+			//println("stack adjusted height")
 			s.height = s.adj_height
-		} 
-	} else {
-		if s.width == 0 {
-			println("stack adjusted width")
-			s.width = s.adj_width
+			println("stack adjusted height $s.adj_height $s.adj_width")
+		} else {
+			s.height -= s.margin.top + s.margin.bottom
 		}
-	}
-	s.height -= s.margin.top + s.margin.bottom
-	s.width -= s.margin.left + s.margin.right
-
+	// } else {
+		if s.width == 0 {
+			//println("stack adjusted width")
+			s.width = s.adj_width
+			println("stack adjusted width $s.adj_width")
+		} else {
+			s.width -= s.margin.left + s.margin.right
+		}
+	// }
 	println("stack size $s.width $s.height")
+
+
+	//println("stack size2 $s.width $s.height")
 
 	// Set all children's positions recursively
 	s.set_children_pos()
@@ -120,17 +111,19 @@ fn (mut s Stack) init(parent Layout) {
 }
 
 fn (mut s Stack) set_children_pos() {
-	mut ui := s.parent.get_ui()
-	_, parent_height := s.parent.size()
+	//mut ui := s.parent.get_ui()
+	//_, parent_height := s.parent.size()
 	mut x := s.x
 	mut y := s.y
 	for mut child in s.children {
 		child_width, child_height := child.size()
-		ui.y_offset = y
+		// ui.x_offset = x
+		// ui.y_offset = y
 		// if s.vertical_alignment == .bottom {
 		// 	child.set_pos(x, parent_height - s.height)
 		// } else {
-			child.set_pos(x, y)
+			//child.set_pos(x, y)
+			s.set_child_pos(child, x, y)
 		// }
 		if s.direction == .row {
 			// Commented the two lines below because not required imho
@@ -146,6 +139,97 @@ fn (mut s Stack) set_children_pos() {
 			child.set_children_pos()
 		}
 	}
+}
+
+fn (s &Stack) set_child_pos(mut child Widget, x int, y int) {
+	// Only alignment along the opposite direction (ex: .row if direction is .column and vice-versa) is considered
+	// TODO: alignment in the direct direction
+	// (for these different cases, container size in the direct direction is more complicated to compute)
+	
+	// Keep it for general alignment
+	// mut x_offset := 0
+	// mut y_offset := 0
+	// mut container_width := s.width
+	// mut container_height := s.height
+	child_width, child_height := child.size()
+	if s.direction == .column {
+		container_width := s.width
+		mut x_offset := 0
+		match s.horizontal_alignment {
+			.left {
+				x_offset = 0
+			}	
+		 	.center {
+				 if container_width > child_width {
+					 x_offset = (container_width - child_width) / 2
+				 } else {
+					 x_offset = 0
+				 }
+			}
+			.right {
+				if container_width > child_width {
+					 x_offset = (container_width - child_width)
+				 } else {
+					x_offset = 0
+				 }
+			}
+		}
+		println("x_offset $x_offset $container_width $child_width")
+		child.set_pos(x + x_offset, y)
+	} else {
+		container_height := s.height
+		mut y_offset := 0
+		match s.vertical_alignment {
+			.top {
+				y_offset = 0
+			}	
+		 	.center {
+				 if container_height > child_height {
+					 y_offset = (container_height - child_height) / 2
+				 } else {
+					 y_offset = 0
+				 }
+			}
+			.bottom {
+				if container_height > child_height {
+					 y_offset = container_height - child_height
+				 } else {
+					 y_offset = 0
+				 }
+			}
+		}
+		println("y_offset $y_offset $container_height $child_height")
+		child.set_pos(x , y + y_offset)
+	}
+
+	// Keep it here, for more general alignment
+	// if s.vertical_alignment == .top {
+	// 	if s.horizontal_alignment == .left {
+	// 		child.set_pos(x, y)
+	// 	} else if s.horizontal_alignment == .center {
+	// 		x_offset = s.width
+	// 		child.set_pos()
+	// 	} else {
+			
+	// 	}
+	// } else if s.vertical_alignment == .center {
+	// 	if s.horizontal_alignment == .left {
+	// 		child.set_pos(x, y)
+	// 	} else if s.horizontal_alignment == .center {
+
+	// 	} else {
+			
+	// 	}
+	// } else {
+	// 	if s.horizontal_alignment == .left {
+	// 		child.set_pos(x, y)
+	// 	} else if s.horizontal_alignment == .center {
+
+	// 	} else {
+			
+	// 	}
+	// }
+	
 }
 
 fn (mut s Stack) set_adjusted_size() {
@@ -244,7 +328,7 @@ fn (mut s Stack) draw() {
 	for child in s.children {
 		child.draw()
 	}
-	s.draw_bb()
+	//s.draw_bb()
 }
 
 fn (s &Stack) draw_bb() {
