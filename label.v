@@ -36,7 +36,8 @@ fn (mut l Label) set_pos(x int, y int) {
 }
 
 fn (mut l Label) size() (int, int) {
-	if l.ui != 0 {
+	//if l.ui != 0 {
+		println("size $l.text")
 		mut w, mut h := l.ui.gg.text_size(l.text)
 		// RCqls: Not Sure at all, just a guess visiting fontstash
 		$if macos {
@@ -47,9 +48,9 @@ fn (mut l Label) size() (int, int) {
 			w = int(f32(w) * l.ui.gg.scale * l.ui.gg.scale)
 		}
 		return w, h * l.text.split('\n').len 
-	} else {
-		return 0, 0
-	}
+	// } else {
+	// 	return 0, 0
+	// }
 }
 
 fn (mut l Label) propose_size(w int, h int) (int, int) {

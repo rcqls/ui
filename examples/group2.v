@@ -1,7 +1,7 @@
 import ui
 
 const (
-	win_width  = 600
+	win_width  = 500
 	win_height = 300
 )
 
@@ -32,10 +32,11 @@ fn main() {
 		}, [
 			ui.row({
 				stretch: true
-				spacing: 20
+				spacing: 50
 			}, [
 				ui.group({
 					title: 'First group'
+					spacing: 15
 				}, [
 					ui.textbox(
 						max_len: 20
@@ -58,6 +59,7 @@ fn main() {
 				]),
 				ui.group({
 					title: 'Second group'
+					spacing: 15
 				}, [
 					ui.textbox(
 						max_len: 20

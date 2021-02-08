@@ -152,7 +152,7 @@ fn on_event(e &sapp.Event, mut window Window) {
 	*/
 }
 
-fn gg_init(mut window Window) {
+pub fn gg_init(window Window) {
 	for _, child in window.children {
 		// if child is Stack {
 		// }
@@ -656,7 +656,9 @@ fn frame(mut w Window) {
 	if w.child_window == 0 {
 		// Render all widgets, including Canvas
 		for child in w.children {
+			//println("drawing ${child.name()}")
 			child.draw()
+			//println("end drawing ${child.name()}")
 		}
 	}
 	// w.showfps()
@@ -759,18 +761,27 @@ fn (window &Window) unfocus_all() {
 	}
 }
 
-fn (mut w Window) set_adjusted_size(i int) {
+// Stuff for children size management 
+
+pub fn (mut w Window) set_adjusted_size(i int) {
 	mut width := 0
 	mut height := 0
 	for mut child in w.children {
 		mut child_width, mut child_height := 0, 0
-		if child is Stack  {
+		if child is Stack {
 			if child.adj_width == 0 {
 				child.set_adjusted_size(i + 1, w.ui)
 			}
 			child_width, child_height = child.adj_width + child.margin.left + child.margin.right, child.adj_height + child.margin.top + child.margin.bottom
+		} else if child is Group {
+			if child.adj_width == 0 {
+				child.set_adjusted_size(i + 1, w.ui)
+			}
+			child_width, child_height = child.adj_width + child.margin_left + child.margin_right, child.adj_height + child.margin_top + child.margin_bottom
 		} else {
 			if child is Label {
+				child.set_ui(w.ui)
+			} else if child is Button {
 				child.set_ui(w.ui)
 			}
 			child_width, child_height = child.size()

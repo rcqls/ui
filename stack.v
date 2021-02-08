@@ -17,12 +17,13 @@ struct StackConfig {
 	height                f32
 	vertical_alignment    VerticalAlignment
 	horizontal_alignment  HorizontalAlignment
+	vertical_alignments   VerticalAlignments
+	horizontal_alignments HorizontalAlignments
 	spacing               int
+	spacings              []int
 	stretch               bool
 	direction             Direction
 	margin                MarginConfig
-	vertical_alignments   VerticalAlignments
-	horizontal_alignments HorizontalAlignments
 }
 
 struct Stack {
@@ -36,15 +37,15 @@ mut:
 	ui                    &UI
 	vertical_alignment    VerticalAlignment
 	horizontal_alignment  HorizontalAlignment
+	vertical_alignments   VerticalAlignments // Flexible alignments by index overriding alignment.
+	horizontal_alignments HorizontalAlignments
 	spacing               int
+	spacings              []int //non equidistant spacing
 	stretch               bool
 	direction             Direction
 	margin                MarginConfig
 	adj_width             int
 	adj_height            int
-	spacings              []int
-	vertical_alignments   VerticalAlignments
-	horizontal_alignments HorizontalAlignments
 }
 
 /*
@@ -75,7 +76,7 @@ fn (mut s Stack) init(parent Layout) {
 	}
 
 	// Before setting children's positions, first set the size recursively for stack children without stack children
-	//s.set_adjusted_size()
+	s.set_adjusted_size(0, s.ui)
 
 	// if s.direction == .column {
 		if s.height == 0 {
@@ -94,7 +95,7 @@ fn (mut s Stack) init(parent Layout) {
 			s.width -= s.margin.left + s.margin.right
 		}
 	// }
-	println("stack size $s.width $s.height")
+	println("stack ${s.name()} size $s.width $s.height")
 
 
 	//println("stack size2 $s.width $s.height")
@@ -246,8 +247,15 @@ fn (mut s Stack) set_adjusted_size(i int, ui &UI) {
 				child.set_adjusted_size(i + 1, ui)
 			}
 			child_width, child_height = child.adj_width + child.margin.left + child.margin.right, child.adj_height + child.margin.top + child.margin.bottom
+		} else if child is Group {
+			if child.adj_width == 0 {
+				child.set_adjusted_size(i + 1, ui)
+			}
+			child_width, child_height = child.adj_width + child.margin_left + child.margin_right, child.adj_height + child.margin_top + child.margin_bottom
 		} else {
 			if child is Label {
+				child.set_ui(ui)
+			} else if child is Button {
 				child.set_ui(ui)
 			}
 			child_width, child_height = child.size()
@@ -332,6 +340,7 @@ fn (s &Stack) size() (int, int) {
 
 fn (mut s Stack) draw() {
 	for child in s.children {
+		//println("drawing ${child.name()}")
 		child.draw()
 	}
 	s.draw_bb()
@@ -389,8 +398,12 @@ fn (s &Stack) is_focused() bool {
 fn (s &Stack) resize(width int, height int) {
 }
 
-fn (s &Stack) get_children() []Widget {
+pub fn (s &Stack) get_children() []Widget {
 	return s.children
+}
+
+pub fn (mut s Stack) set_children(c []Widget)  {
+	s.children = c
 }
 
 fn (s &Stack) get_vertical_alignment(i int) VerticalAlignment {
