@@ -37,6 +37,7 @@ fn main() {
 			ui.button(text: 'text last', onclick: btn_last_text_click),
 			ui.button(text: 'text third', onclick: btn_third_text_click),
 			ui.button(text: 'text above', onclick: btn_text_above_click),
+			ui.button(text: 'switch', onclick: btn_switch_click),
 		]), ui.column({
 			spacing: 10
 			margin_: 10
@@ -45,6 +46,14 @@ fn main() {
 		])]),
 	])
 	ui.run(window)
+}
+
+fn btn_switch_click(mut app State, btn &ui.Button) {
+	window := btn.ui.window
+	mut s := window.root_layout
+	if s is ui.Stack {
+		s.move(from: 0, to: -1)
+	}
 }
 
 fn btn_add_click(mut app State, btn &ui.Button) {
