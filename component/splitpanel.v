@@ -103,33 +103,37 @@ fn splitpanel_btn_mouse_up(b &ui.Button, e &ui.MouseEvent) {
 fn splitpanel_btn_mouse_move(b &ui.Button, e &ui.MouseMoveEvent) {
 	mut sp := splitpanel_component(b)
 	if sp.active {
-		if sp.direction == .row {
-			w, _ := sp.layout.size()
-			if e.x < sp.layout.x {
-				sp.weight = f32(0.1)
-			} else if e.x > sp.layout.x + w {
-				sp.weight = f32(99.9)
-			} else {
-				sp.weight = f32(e.x - sp.layout.x) / f32(w) * 100.0
-			}
-			// println("$e.x $sp.layout.x $w = > $sp.weight")
-			sp.layout.widths = [sp.weight * ui.stretch, sp.btn_size, (100.0 - sp.weight) * ui.stretch]
-			// sp.layout.widths = [ui.stretch ]
-		} else {
-			_, h := sp.layout.size()
-			if e.y < sp.layout.y {
-				sp.weight = f32(0.0)
-			} else if e.y > sp.layout.y + h {
-				sp.weight = f32(100.0)
-			} else {
-				sp.weight = f32(e.y - sp.layout.y) / f32(h) * 100.0
-			}
-			// println("${e.y - sp.layout.y} / $h")
-			sp.layout.heights = [sp.weight * ui.stretch, sp.btn_size,
-				(100.0 - sp.weight) * ui.stretch]
-		}
-		// println("toto $sp.weight")
-		sp.layout.update_layout()
-		// b.ui.window.update_layout()
+		sp.resize(e.x, e.y)
 	}
+}
+
+pub fn (mut sp SplitPanelComponent) resize(x f64, y f64) {
+	if sp.direction == .row {
+		w, _ := sp.layout.size()
+		if x < sp.layout.x {
+			sp.weight = f32(0.1)
+		} else if x > sp.layout.x + w {
+			sp.weight = f32(99.9)
+		} else {
+			sp.weight = f32(x - sp.layout.x) / f32(w) * 100.0
+		}
+		// println("$x $sp.layout.x $w = > $sp.weight")
+		sp.layout.widths = [sp.weight * ui.stretch, sp.btn_size, (100.0 - sp.weight) * ui.stretch]
+		// sp.layout.widths = [ui.stretch ]
+	} else {
+		_, h := sp.layout.size()
+		if y < sp.layout.y {
+			sp.weight = f32(0.0)
+		} else if y > sp.layout.y + h {
+			sp.weight = f32(100.0)
+		} else {
+			sp.weight = f32(y - sp.layout.y) / f32(h) * 100.0
+		}
+		// println("${y - sp.layout.y} / $h")
+		sp.layout.heights = [sp.weight * ui.stretch, sp.btn_size,
+			(100.0 - sp.weight) * ui.stretch]
+	}
+	// println("toto $sp.weight")
+	sp.layout.update_layout()
+	// b.ui.window.update_layout()
 }
