@@ -3,30 +3,28 @@ import regex
 import gx
 import math
 
-const (
-	win_width  = 400
-	win_height = 41
-)
+const win_width = 400
+const win_height = 41
 
 fn main() {
 	window := ui.window(
-		width: win_width
+		width:  win_width
 		height: win_height
-		title: 'Temperature Converter'
-		mode: .resizable
+		title:  'Temperature Converter'
+		mode:   .resizable
 		layout: ui.row(
-			margin_: 10
-			spacing: 10
-			widths: [ui.stretch, ui.compact, ui.stretch, ui.compact]
-			heights: 20.0
+			margin_:  10
+			spacing:  10
+			widths:   [ui.stretch, ui.compact, ui.stretch, ui.compact]
+			heights:  20.0
 			children: [
 				ui.textbox(
-					id: 'celsius'
+					id:        'celsius'
 					on_change: on_change_celsius
 				),
 				ui.label(text: 'Celsius = '),
 				ui.textbox(
-					id: 'fahren'
+					id:        'fahren'
 					on_change: on_change_fahren
 				),
 				ui.label(text: 'Fahrenheit'),

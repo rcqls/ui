@@ -5,9 +5,7 @@ import gg
 import eventbus
 import regex
 
-const (
-	null_rect = gg.Rect{0.0, 0.0, 0.0, 0.0}
-)
+const null_rect = gg.Rect{0.0, 0.0, 0.0, 0.0}
 
 /*
 Goal:
@@ -53,15 +51,15 @@ union Box {
 }
 
 enum BoxMode {
-	left_top_width_height // width>0, height>0
-	right_top_width_height // width<0, height>0
+	left_top_width_height     // width>0, height>0
+	right_top_width_height    // width<0, height>0
 	right_bottom_width_height // width<0, height<0
-	left_bottom_width_height // width>0, height<0
+	left_bottom_width_height  // width>0, height<0
 	left_top_right_bottom
 }
 
 // TODO: add bg_color
-[heap]
+@[heap]
 pub struct BoxLayout {
 pub mut:
 	id          string
@@ -81,8 +79,8 @@ pub mut:
 	// children
 	child_box        []Box
 	child_box_expr   map[string]string // for box_expression mode, i.e. specifically when some @id are used inside bounding expression
-	child_id         []string // relative id
-	cid              []string // real child id defined inside its own constructor
+	child_id         []string          // relative id
+	cid              []string          // real child id defined inside its own constructor
 	child_mode       []BoxMode
 	children         []Widget
 	drawing_children []Widget
@@ -91,8 +89,8 @@ pub mut:
 	is_root_layout   bool = true
 	// scrollview
 	has_scrollview   bool
-	scrollview       &ScrollView = unsafe { nil }
-	on_scroll_change ScrollViewChangedFn = ScrollViewChangedFn(0)
+	scrollview       &ScrollView         = unsafe { nil }
+	on_scroll_change ScrollViewChangedFn = unsafe { ScrollViewChangedFn(0) }
 	// component state for composable widget
 	component voidptr
 	// debug stuff to be removed
@@ -100,7 +98,7 @@ pub mut:
 	mc        MiniCalc = mini_calc()
 }
 
-[params]
+@[params]
 pub struct BoxLayoutParams {
 pub mut:
 	id         string
@@ -116,13 +114,13 @@ pub mut:
 // TODO: documentation
 pub fn box_layout(c BoxLayoutParams) &BoxLayout {
 	mut b := &BoxLayout{
-		id: c.id
-		x: c.x
-		y: c.y
-		width: c.width
-		height: c.height
+		id:       c.id
+		x:        c.x
+		y:        c.y
+		width:    c.width
+		height:   c.height
 		clipping: c.clipping
-		ui: 0
+		ui:       unsafe { nil }
 	}
 	for key, child in c.children {
 		mut child_mut := child
@@ -137,8 +135,8 @@ pub fn box_layout(c BoxLayoutParams) &BoxLayout {
 // TODO: documentation
 pub fn (mut b BoxLayout) init(parent Layout) {
 	b.parent = parent
-	mut ui := parent.get_ui()
-	b.ui = ui
+	mut u := parent.get_ui()
+	b.ui = u
 	for _, mut child in b.children {
 		// DON'T DO THAT: child.id = b.child_id[i]
 		// println('$i) gl init child ${child.id} ')
@@ -175,7 +173,7 @@ fn (mut b BoxLayout) set_root_layout() {
 }
 
 // TODO: documentation
-[manualfree]
+@[manualfree]
 pub fn (mut b BoxLayout) cleanup() {
 	for mut child in b.children {
 		child.cleanup()
@@ -186,7 +184,7 @@ pub fn (mut b BoxLayout) cleanup() {
 }
 
 // TODO: documentation
-[unsafe]
+@[unsafe]
 pub fn (b &BoxLayout) free() {
 	$if free ? {
 		print('group ${b.id}')
@@ -626,7 +624,7 @@ fn (mut b BoxLayout) resize(width int, height int) {
 	}
 }
 
-fn (b &BoxLayout) get_subscriber() &eventbus.Subscriber {
+fn (b &BoxLayout) get_subscriber() &eventbus.Subscriber[string] {
 	parent := b.parent
 	return parent.get_subscriber()
 }
@@ -910,7 +908,7 @@ fn (b &BoxLayout) parse_bounding_with_possible_zindex(left string, right string)
 		if vec4.len == 3 {
 			has_z_index = true
 			z_index = int(vec4[2])
-			vec4 = vec4[0..2]
+			vec4 = unsafe { vec4[0..2] }
 		}
 		tmp2 := right.find_between('(', ')')
 		vec4 << tmp2.replace('%', '/100.0').split(',').map(b.calculate(it))

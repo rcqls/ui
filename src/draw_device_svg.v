@@ -3,18 +3,18 @@ module ui
 import gx
 import gg
 import ui.libvg
-import math
 
 struct DrawDeviceSVG {
 mut:
-	id string = 'dd_svg'
+	id string              = 'dd_svg'
 	ts &libvg.SvgTextStyle = unsafe { nil }
 pub mut:
 	s &libvg.Svg = unsafe { nil }
 }
 
-[params]
+@[params]
 struct DrawDeviceSVGParams {
+pub:
 	id string = 'dd_svg'
 }
 
@@ -28,7 +28,7 @@ pub fn draw_device_svg(p DrawDeviceSVGParams) &DrawDeviceSVG {
 }
 
 // screenshot method for SVG device
-[manualfree]
+@[manualfree]
 pub fn (mut d DrawDeviceSVG) screenshot_window(filename string, mut w Window) {
 	// println("svg device")
 	d.s = libvg.svg(width: w.width, height: w.height)
@@ -135,17 +135,17 @@ pub fn (d &DrawDeviceSVG) set_clipping(rect Rect) {
 // TODO: documentation
 pub fn (d &DrawDeviceSVG) get_clipping() Rect {
 	// TODO: implement
-	return Rect{0, 0, math.max_i32, math.max_i32}
+	return Rect{0, 0, int(max_i32), int(max_i32)}
 }
 
 // TODO: documentation
-pub fn (d &DrawDeviceSVG) draw_pixel(x f32, y f32, color gx.Color) {
+pub fn (d &DrawDeviceSVG) draw_pixel(x f32, y f32, color gx.Color, params gg.DrawPixelConfig) {
 	mut s := d.s
 	s.rectangle(int(x), int(y), 1, 1, fill: hex_color(color))
 }
 
 // TODO: documentation
-pub fn (d &DrawDeviceSVG) draw_pixels(points []f32, color gx.Color) {
+pub fn (d &DrawDeviceSVG) draw_pixels(points []f32, color gx.Color, params gg.DrawPixelConfig) {
 	mut s := d.s
 	for i in 0 .. points.len / 2 {
 		s.rectangle(int(points[i * 2]), int(points[i * 2 + 1]), 1, 1, fill: hex_color(color))
@@ -164,7 +164,7 @@ pub fn (d &DrawDeviceSVG) draw_triangle_empty(x f32, y f32, x2 f32, y2 f32, x3 f
 	// println('$d.id draw_triangle_empty($x, $y, $x2, $y2, $x3, $y3, color gx.Color)')
 	mut s := d.s
 	s.polyline('${x},${y} ${x2},${y2} ${x3},${y3} ${x},${y}',
-		stroke: hex_color(color)
+		stroke:      hex_color(color)
 		strokewidth: 1
 	)
 }
@@ -195,8 +195,8 @@ pub fn (d &DrawDeviceSVG) draw_rounded_rect_filled(x f32, y f32, w f32, h f32, r
 	// println('$d.id draw_rounded_rect_filled($x, $y, $w, $h, $radius, color gx.Color)')
 	mut s := d.s
 	s.rectangle(int(x), int(y), int(w), int(h),
-		rx: int(radius)
-		ry: int(radius)
+		rx:   int(radius)
+		ry:   int(radius)
 		fill: hex_color(color)
 	)
 }
@@ -206,9 +206,9 @@ pub fn (d &DrawDeviceSVG) draw_rounded_rect_empty(x f32, y f32, w f32, h f32, ra
 	// println('$d.id draw_rounded_rect_empty($x, $y, $w, $h, $radius, color gx.Color)')
 	mut s := d.s
 	s.rectangle(int(x), int(y), int(w), int(h),
-		rx: int(radius)
-		ry: int(radius)
-		stroke: hex_color(color)
+		rx:          int(radius)
+		ry:          int(radius)
+		stroke:      hex_color(color)
 		strokewidth: 1
 	)
 }

@@ -1,5 +1,5 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
@@ -7,7 +7,7 @@ import math
 import gx
 import eventbus
 
-[heap]
+@[heap]
 pub struct Group {
 pub mut:
 	id            string
@@ -38,7 +38,7 @@ pub mut:
 	debug_ids []string
 }
 
-[params]
+@[params]
 pub struct GroupParams {
 pub mut:
 	id       string
@@ -54,24 +54,24 @@ pub mut:
 
 pub fn group(c GroupParams) &Group {
 	mut g := &Group{
-		id: c.id
-		title: c.title
-		x: c.x
-		y: c.y
-		width: c.width
-		height: c.height
-		spacing: c.spacing
+		id:       c.id
+		title:    c.title
+		x:        c.x
+		y:        c.y
+		width:    c.width
+		height:   c.height
+		spacing:  c.spacing
 		clipping: c.clipping
 		children: c.children
-		ui: 0
+		ui:       unsafe { nil }
 	}
 	return g
 }
 
 fn (mut g Group) init(parent Layout) {
 	g.parent = parent
-	ui := parent.get_ui()
-	g.ui = ui
+	u := parent.get_ui()
+	g.ui = u
 	g.decode_size()
 	for mut child in g.children {
 		child.init(g)
@@ -79,7 +79,7 @@ fn (mut g Group) init(parent Layout) {
 	g.calculate_child_positions()
 }
 
-[manualfree]
+@[manualfree]
 pub fn (mut g Group) cleanup() {
 	for mut child in g.children {
 		child.cleanup()
@@ -89,7 +89,7 @@ pub fn (mut g Group) cleanup() {
 	}
 }
 
-[unsafe]
+@[unsafe]
 pub fn (g &Group) free() {
 	$if free ? {
 		print('group ${g.id}')
@@ -133,7 +133,12 @@ fn (mut g Group) calculate_child_positions() {
 	mut start_y := g.y + g.margin_top + title_off
 	for mut widget in widgets {
 		_, wid_h := widget.size()
-		widget.set_pos(start_x, start_y)
+		if mut widget is AdjustableWidget {
+			mut w := widget as AdjustableWidget
+			w.set_adjusted_pos(start_x, start_y)
+		} else {
+			widget.set_pos(start_x, start_y)
+		}
 		start_y = start_y + wid_h + g.spacing
 	}
 	$if gccp ? {
@@ -196,12 +201,12 @@ fn (g &Group) get_ui() &UI {
 fn (g &Group) resize(width int, height int) {
 }
 
-fn (g &Group) get_subscriber() &eventbus.Subscriber {
+fn (g &Group) get_subscriber() &eventbus.Subscriber[string] {
 	parent := g.parent
 	return parent.get_subscriber()
 }
 
-fn (mut g Group) set_adjusted_size(i int, ui &UI) {
+fn (mut g Group) set_adjusted_size(i int, u &UI) {
 	mut h, mut w := 0, 0
 	for mut child in g.children {
 		mut child_width, mut child_height := child.size()

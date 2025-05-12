@@ -4,20 +4,20 @@ import gg
 
 struct EventNames {
 pub:
-	on_click        string = 'on_click'
-	on_mouse_move   string = 'on_mouse_move'
-	on_mouse_down   string = 'on_mouse_down'
-	on_mouse_up     string = 'on_mouse_up'
-	on_files_droped string = 'on_files_droped'
-	on_swipe        string = 'on_swipe'
-	on_touch_move   string = 'on_touch_move'
-	on_touch_down   string = 'on_touch_down'
-	on_touch_up     string = 'on_touch_up'
-	on_key_down     string = 'on_key_down'
-	on_char         string = 'on_char'
-	on_key_up       string = 'on_key_up'
-	on_scroll       string = 'on_scroll'
-	on_resize       string = 'on_resize'
+	on_click         string = 'on_click'
+	on_mouse_move    string = 'on_mouse_move'
+	on_mouse_down    string = 'on_mouse_down'
+	on_mouse_up      string = 'on_mouse_up'
+	on_files_dropped string = 'on_files_dropped'
+	on_swipe         string = 'on_swipe'
+	on_touch_move    string = 'on_touch_move'
+	on_touch_down    string = 'on_touch_down'
+	on_touch_up      string = 'on_touch_up'
+	on_key_down      string = 'on_key_down'
+	on_char          string = 'on_char'
+	on_key_up        string = 'on_key_up'
+	on_scroll        string = 'on_scroll'
+	on_resize        string = 'on_resize'
 	// on_mouse_enter  string = 'on_mouse_enter'
 	// on_mouse_leave  string = 'on_mouse_leave'
 	on_delegate string = 'on_delegate'
@@ -60,7 +60,7 @@ pub fn (mut em EventMngr) rm_receiver(widget Widget, evt_types []string) {
 			em.receivers[evt_type].delete(ind)
 		}
 		// sort it
-		em.sorted_receivers(evt_type)
+		// bug if uncommented: em.sorted_receivers(evt_type)
 	}
 }
 
@@ -93,7 +93,7 @@ pub fn (mut em EventMngr) point_inside_receivers_mouse_event(e MouseEvent, evt_t
 
 pub fn (mut em EventMngr) point_inside_receivers_scroll_event(e ScrollEvent) {
 	// TODO first sort scroll_receivers by order, z_index and hidden
-	evt_type := ui.events.on_scroll
+	evt_type := events.on_scroll
 	em.point_inside[evt_type].clear()
 	em.sorted_receivers(evt_type)
 	$if em_scroll ? {
@@ -126,7 +126,7 @@ pub fn (mut em EventMngr) point_inside_receivers_scroll_event(e ScrollEvent) {
 
 pub fn (mut em EventMngr) point_inside_receivers_mouse_move(e MouseMoveEvent) {
 	// TODO first sort scroll_receivers by order, z_index and hidden
-	evt_type := ui.events.on_mouse_move
+	evt_type := events.on_mouse_move
 	point_inside_ids := em.point_inside[evt_type].map(it.id)
 	em.point_inside[evt_type].clear()
 	em.sorted_receivers(evt_type)
@@ -165,7 +165,7 @@ pub fn (mut em EventMngr) sorted_receivers(evt_type string) {
 	mut sw := []SortedWidget{}
 	mut sorted := []Widget{}
 	$if em_sr ? {
-		println('Before sort: ')
+		println('Before sort: (${evt_type})')
 		em.list_receivers(evt_type)
 	}
 	for i, child in em.receivers[evt_type] {
@@ -200,7 +200,7 @@ pub fn (w Window) point_inside_receivers(evt_type string) []string {
 
 // used for debug
 pub fn (em &EventMngr) list_receivers(evt_type string) {
-	print('receivers list for ${evt_type}: ')
+	print('receivers list for ${evt_type} (${em.receivers[evt_type].len}): ')
 	for i, ch in em.receivers[evt_type] {
 		id := ch.id()
 		print('(${i})[${id}: ${ch.z_index}] ')
@@ -211,8 +211,8 @@ pub fn (em &EventMngr) list_receivers(evt_type string) {
 // delegation (useful for iui interconnection)
 
 fn (em &EventMngr) has_delegation(e &gg.Event, gui &UI) bool {
-	if em.receivers[ui.events.on_delegate].len > 0 {
-		for mut w in em.receivers[ui.events.on_delegate] {
+	if em.receivers[events.on_delegate].len > 0 {
+		for mut w in em.receivers[events.on_delegate] {
 			x, y := e.mouse_x / gui.window.dpi_scale, e.mouse_y / gui.window.dpi_scale
 			if w.point_inside(x, y) {
 				return true

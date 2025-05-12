@@ -3,17 +3,18 @@ module component
 import ui
 import gx
 
-[heap]
+@[heap]
 pub struct FontButtonComponent {
 pub mut:
-	btn &ui.Button
+	btn &ui.Button = unsafe { nil }
 	dtw ui.DrawTextWidget
 }
 
-[params]
+@[params]
 pub struct FontButtonParams {
+pub:
 	id           string
-	dtw          ui.DrawTextWidget = ui.canvas_plus()
+	dtw          &ui.DrawTextWidget = ui.canvas_plus()
 	text         string
 	height       int
 	width        int
@@ -28,18 +29,18 @@ pub struct FontButtonParams {
 // TODO: documentation
 pub fn fontbutton(c FontButtonParams) &ui.Button {
 	b := &ui.Button{
-		id: c.id
-		text: c.text
-		width_: c.width
-		height_: c.height
-		z_index: c.z_index
+		id:       c.id
+		text:     c.text
+		width_:   c.width
+		height_:  c.height
+		z_index:  c.z_index
 		bg_color: c.bg_color
 		// theme_cfg: ui.no_theme
-		tooltip: ui.TooltipMessage{c.tooltip, c.tooltip_side}
-		on_click: font_button_click
+		tooltip:      ui.TooltipMessage{c.tooltip, c.tooltip_side}
+		on_click:     font_button_click
 		style_params: ui.button_style(radius: f32(c.radius))
-		padding: f32(c.padding)
-		ui: 0
+		padding:      f32(c.padding)
+		ui:           unsafe { nil }
 	}
 	mut fb := &FontButtonComponent{
 		btn: b

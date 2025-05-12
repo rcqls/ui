@@ -2,25 +2,23 @@ import ui
 import ui.component as uic
 import gx
 
-const (
-	win_width  = 600
-	win_height = 600
-)
+const win_width = 600
+const win_height = 600
 
 fn main() {
 	n := 1000000
 	window := ui.window(
-		width: win_width
-		height: win_height
-		title: 'V UI: Grid'
+		width:          win_width
+		height:         win_height
+		title:          'V UI: Grid'
 		native_message: false
-		mode: .resizable
-		bg_color: gx.white
-		on_init: win_init
-		layout: uic.datagrid_boxlayout(
-			id: 'grid'
+		mode:           .resizable
+		bg_color:       gx.white
+		on_init:        win_init
+		layout:         uic.datagrid_boxlayout(
+			id:         'grid'
 			is_focused: true
-			vars: {
+			vars:       {
 				'v1':   ['toto', 'titi', 'tata'].repeat(n)
 				'v2':   ['toti', 'tito', 'tato'].repeat(n)
 				'sex':  uic.Factor{

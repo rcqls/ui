@@ -4,7 +4,7 @@ import ui
 // import time
 import gg
 
-[heap]
+@[heap]
 struct GGComponent {
 	id string
 pub mut:
@@ -12,24 +12,27 @@ pub mut:
 	app    ui.GGApplication
 }
 
-[params]
+@[params]
 pub struct GGComponentParams {
-	id  string = 'gg_app'
-	app ui.GGApplication
+pub:
+	id      string = 'gg_app'
+	app     ui.GGApplication
+	z_index int
 }
 
 pub fn gg_canvaslayout(p GGComponentParams) &ui.CanvasLayout {
 	mut layout := ui.canvas_plus(
-		id: ui.component_id(p.id, 'layout')
-		delegate_evt_mngr: true
-		on_draw: gg_draw
-		on_delegate: gg_on_delegate
+		id:                 ui.component_id(p.id, 'layout')
+		delegate_evt_mngr:  true
+		on_draw:            gg_draw
+		on_delegate:        gg_on_delegate
 		on_bounding_change: gg_on_bounding_change
+		z_index:            p.z_index
 	)
 	mut ggc := &GGComponent{
-		id: p.id
+		id:     p.id
 		layout: layout
-		app: p.app
+		app:    p.app
 	}
 	ui.component_connect(ggc, layout)
 	layout.on_init = gg_init

@@ -3,10 +3,8 @@ import ui.component as uic
 import gx
 import os
 
-const (
-	win_width  = 800
-	win_height = 600
-)
+const win_width = 800
+const win_height = 600
 
 struct App {
 mut:
@@ -16,16 +14,16 @@ mut:
 
 fn main() {
 	mut app := &App{
-		window: 0
+		window: unsafe { nil }
 	}
 	// TODO: use a proper parser loop, or even better - the `flag` module
-	mut args := os.args#[1..]
+	mut args := os.args#[1..].clone()
 	mut hidden_files := false
 	if args.len > 0 {
 		hidden_files = (args[0] in ['-H', '--hidden-files'])
 	}
 	if hidden_files {
-		args = args#[1..]
+		args = args#[1..].clone()
 	}
 	app.line_numbers = true
 	if args.len > 0 {
@@ -34,7 +32,7 @@ fn main() {
 		}
 	}
 	if app.line_numbers {
-		args = args#[1..]
+		args = args#[1..].clone()
 	}
 	mut dirs := args.clone()
 	if dirs.len == 0 {
@@ -42,22 +40,22 @@ fn main() {
 	}
 	dirs = dirs.map(os.real_path(it))
 	mut window := ui.window(
-		width: win_width
-		height: win_height
-		title: 'V UI Edit: ${dirs[0]}'
+		width:          win_width
+		height:         win_height
+		title:          'V UI Edit: ${dirs[0]}'
 		native_message: false
-		mode: .resizable
-		on_init: init
+		mode:           .resizable
+		on_init:        init
 		// on_char: on_char
 		layout: ui.row(
-			id: 'main'
-			widths: [ui.stretch, ui.stretch * 2]
+			id:       'main'
+			widths:   [ui.stretch, ui.stretch * 2]
 			children: [
 				uic.hideable_stack(
-					id: 'hmenu'
+					id:     'hmenu'
 					layout: uic.menufile_stack(
-						id: 'menu'
-						dirs: dirs
+						id:              'menu'
+						dirs:            dirs
 						on_file_changed: fn [mut app] (mut mf uic.MenuFileComponent) {
 							mf.layout.ui.window.set_title('V UI Edit: ${mf.file}')
 							// reinit textbox scrollview
@@ -75,11 +73,11 @@ fn main() {
 							}
 							tb.tv.sh.set_lang(os.file_ext(mf.file))
 						}
-						on_new: fn (mf &uic.MenuFileComponent) {
+						on_new:          fn (mf &uic.MenuFileComponent) {
 							// println("new $mf.file!!!")
 							os.write_file(mf.file, '') or {}
 						}
-						on_save: fn (mf &uic.MenuFileComponent) {
+						on_save:         fn (mf &uic.MenuFileComponent) {
 							// println("save $mf.file")
 							tb := mf.layout.ui.window.get_or_panic[ui.TextBox]('edit')
 							// println("text: <${*tb.text}>")
@@ -88,14 +86,14 @@ fn main() {
 					)
 				),
 				ui.textbox(
-					mode: .multiline
-					id: 'edit'
-					z_index: 20
-					height: 200
+					mode:               .multiline
+					id:                 'edit'
+					z_index:            20
+					height:             200
 					line_height_factor: 1.0 // double the line_height
-					text_size: 24
-					text_font_name: 'fixed'
-					bg_color: gx.hex(0xfcf4e4ff) // gx.rgb(252, 244, 228)
+					text_size:          24
+					text_font_name:     'fixed'
+					bg_color:           gx.hex(0xfcf4e4ff) // gx.rgb(252, 244, 228)
 				),
 			]
 		)

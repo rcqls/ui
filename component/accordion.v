@@ -3,10 +3,10 @@ module component
 import ui
 import gx
 
-[heap]
+@[heap]
 pub struct AccordionComponent {
 pub mut:
-	layout     &ui.Stack // required
+	layout     &ui.Stack = unsafe { nil } // required
 	titles     map[string]string
 	selected   map[string]bool
 	views      map[string]int
@@ -16,8 +16,9 @@ pub mut:
 	bg_color   gx.Color
 }
 
-[params]
+@[params]
 pub struct AccordionParams {
+pub:
 	id         string
 	titles     []string
 	children   []ui.Widget
@@ -39,24 +40,24 @@ pub fn accordion_stack(c AccordionParams) &ui.Stack {
 		heights = c.heights.clone()
 	}
 	mut layout := ui.column(
-		id: ui.component_id(c.id, 'layout')
-		widths: [ui.stretch].repeat(c.children.len * 2)
-		heights: heights
-		bg_color: c.bg_color
+		id:         ui.component_id(c.id, 'layout')
+		widths:     [ui.stretch].repeat(c.children.len * 2)
+		heights:    heights
+		bg_color:   c.bg_color
 		scrollview: c.scrollview
 	)
 	mut acc := &AccordionComponent{
-		layout: layout
+		layout:     layout
 		text_color: c.text_color
-		text_size: c.text_size
+		text_size:  c.text_size
 	}
 	ui.component_connect(acc, layout)
 	mut title_id := ''
 	for i, title in c.titles {
 		title_id = c.id + '_${i}'
 		title_cp := ui.canvas_plus(
-			id: title_id
-			on_draw: accordion_draw
+			id:       title_id
+			on_draw:  accordion_draw
 			on_click: accordion_click
 		)
 		ui.component_connect(acc, title_cp)

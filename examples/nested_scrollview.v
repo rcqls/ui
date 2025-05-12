@@ -1,20 +1,18 @@
 import ui
 
-const (
-	win_width              = 550
-	win_height             = 300
+const win_width = 550
+const win_height = 300
 
-	box_width              = 110
-	box_height             = 90
+const box_width = 110
+const box_height = 90
 
-	area_width             = 600
-	area_height            = 400
-	area_spacing           = 10
+const area_width = 600
+const area_height = 400
+const area_spacing = 10
 
-	instructions           = 'Run v -d ui_scroll_nest and scroll inside/outside scrollviews'
+const instructions = 'Run v -d ui_scroll_nest and scroll inside/outside scrollviews'
 
-	single_column_of_boxes = false
-)
+const single_column_of_boxes = false
 
 struct App {
 mut:
@@ -24,17 +22,17 @@ mut:
 fn make_scroll_area_box(mut app App, r string, c string) ui.Widget {
 	app.box_text << 'box${r}${c}\n...\n...\n...\n...\n...\n...\n...\n...\n...'
 	return ui.textbox(
-		id: 'box${r}${c}'
-		width: box_width
-		height: box_height
+		id:           'box${r}${c}'
+		width:        box_width
+		height:       box_height
 		is_multiline: true
-		text: &app.box_text[app.box_text.len - 1]
+		text:         &app.box_text[app.box_text.len - 1]
 	)
 }
 
 fn make_scroll_area_row(mut app App, r string) ui.Widget {
 	return ui.row(
-		spacing: area_spacing
+		spacing:  area_spacing
 		children: [
 			make_scroll_area_box(mut app, r, '-1'),
 			make_scroll_area_box(mut app, r, '-2'),
@@ -64,11 +62,11 @@ fn make_scroll_area(mut app App) ui.Widget {
 	}
 
 	return ui.column(
-		id: 'scroll-column'
-		margin_: area_spacing
-		spacing: area_spacing
+		id:         'scroll-column'
+		margin_:    area_spacing
+		spacing:    area_spacing
 		scrollview: true
-		children: kids
+		children:   kids
 	)
 }
 
@@ -84,14 +82,14 @@ fn win_key_down(w &ui.Window, e ui.KeyEvent) {
 fn main() {
 	mut app := App{}
 	mut win := ui.window(
-		width: win_width
-		height: win_height
-		title: 'V nested scrollviews'
+		width:       win_width
+		height:      win_height
+		title:       'V nested scrollviews'
 		on_key_down: win_key_down
-		mode: .resizable
-		layout: ui.column(
-			heights: [ui.stretch, 20.0]
-			widths: ui.stretch
+		mode:        .resizable
+		layout:      ui.column(
+			heights:  [ui.stretch, 20.0]
+			widths:   ui.stretch
 			children: [make_scroll_area(mut app), ui.label(
 				text: &instructions
 			)]

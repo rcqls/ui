@@ -1,12 +1,13 @@
 module ui
 
 import gx
+import math
 // import time
 // import encoding.utf8
 
-const (
-	textview_margin = 10
-)
+const textview_margin = 10
+const wordwrap_border = 20
+const word_separator = ' \n\t\v\f\r'
 
 // position (cursor_pos, sel_start, sel_end) set in the runes world
 pub struct TextView {
@@ -62,18 +63,20 @@ pub fn (mut tv TextView) init(tb &TextBox) {
 	tv.update_line_height()
 	tv.sh = syntaxhighlighter()
 	tv.sh.init(tv)
-	// println('line height: $tv.line_height')
+	// println('INIT: line height: $tv.line_height')
 	tv.refresh_visible_lines()
 	tv.update_lines()
 	tv.cancel_selection()
 	tv.sync_text_pos()
-	lock_scrollview_key(tv.tb)
+	if tv.tb.has_scrollview {
+		lock_scrollview_key(tv.tb)
+	}
 }
 
 pub fn (tv &TextView) size() (int, int) {
 	tv.load_style()
 	mut w, mut h := 0, textbox_padding_y * 2 + tv.line_height * tv.tlv.lines.len
-	// println("size $tv.tb.id: $tv.tlv.lines $tv.tlv.lines.len $tv.tlv.to_j")
+	// println('size ${tv.tb.id}: ${tv.tlv.lines} ${tv.tlv.lines.len} ${tv.tlv.to_j} (width= ${tv.tb.width})')
 	if tv.tlv.from_j > -1 && tv.tlv.from_j <= (tv.tlv.lines.len - 1) && tv.tlv.to_j > -1
 		&& tv.tlv.to_j <= (tv.tlv.lines.len - 1) {
 		for line in tv.tlv.lines[tv.tlv.from_j..(tv.tlv.to_j + 1)] {
@@ -82,9 +85,9 @@ pub fn (tv &TextView) size() (int, int) {
 				w = lw
 			}
 		}
-		w += tv.left_margin + ui.textview_margin
+		w += tv.left_margin + textview_margin
 	}
-	// println("tv size: $w, $h")
+	// println("tv size: $tv.tb.id $w, $h")
 	return w, h
 }
 
@@ -193,13 +196,17 @@ fn (mut tv TextView) refresh_visible_lines() {
 
 fn (mut tv TextView) update_all_visible_lines() {
 	if tv.tlv.refresh_visible_lines {
-		// println("visible line ${time.now()}")
+		// println("visible line")
 		tv.tlv.from_i.clear()
 		tv.tlv.to_i.clear()
 		for j in tv.tlv.from_j .. tv.tlv.to_j + 1 {
-			tv.tlv.from_i << tv.text_pos_from_x(tv.tlv.lines[j], tv.tb.scrollview.offset_x)
-			tv.tlv.to_i << tv.text_pos_from_x(tv.tlv.lines[j], tv.tb.scrollview.offset_x +
-				tv.tb.width)
+			tv.tlv.from_i << tv.text_pos_from_x(tv.tlv.lines[j], if tv.tb.has_scrollview {
+				tv.tb.scrollview.offset_x
+			} else {
+				0
+			})
+			tv.tlv.to_i << tv.text_pos_from_x(tv.tlv.lines[j],
+				if tv.tb.has_scrollview { tv.tb.scrollview.offset_x } else { 0 } + tv.tb.width)
 		}
 		// refresh_visible_lines done
 		tv.tlv.refresh_visible_lines = false
@@ -207,15 +214,13 @@ fn (mut tv TextView) update_all_visible_lines() {
 }
 
 pub fn (mut tv TextView) update_lines() {
-	if tv.is_wordwrap() {
+	if tv.is_wordwrap() && tv.tb.width > 30 { // 30 is the default width when not set
 		tv.word_wrap_text()
 	} else {
 		tv.tlv.lines = (*tv.text).split('\n')
 	}
 	// TO BE DONE AFTER newly created tv.tlv.lines
-	if tv.tb.has_scrollview {
-		tv.visible_lines()
-	}
+	tv.visible_lines()
 	// println(tv.tlv.lines)
 	tv.sync_text_lines()
 	tv.update_left_margin()
@@ -223,9 +228,9 @@ pub fn (mut tv TextView) update_lines() {
 }
 
 fn (mut tv TextView) update_left_margin() {
-	tv.left_margin = ui.textview_margin
+	tv.left_margin = textview_margin
 	if tv.tb.is_line_number {
-		tv.left_margin += ui.textview_margin + tv.text_width(tv.tlv.lines.len.str())
+		tv.left_margin += textview_margin + tv.text_width(tv.tlv.lines.len.str())
 	}
 }
 
@@ -320,8 +325,7 @@ fn (mut tv TextView) draw_device_selection(d DrawDevice) {
 }
 
 fn (tv &TextView) draw_device_line_number(d DrawDevice, i int, y int) {
-	tv.draw_device_styled_text(d, tv.tb.x + ui.textview_margin, y, (tv.tlv.from_j + i + 1).str(),
-		
+	tv.draw_device_styled_text(d, tv.tb.x + textview_margin, y, (tv.tlv.from_j + i + 1).str(),
 		color: gx.gray
 	)
 }
@@ -336,9 +340,46 @@ fn (mut tv TextView) insert(s string) {
 	tv.update_lines()
 }
 
-fn (mut tv TextView) delete_cur_char() {
+// get the index of the word at the cursor position
+// The start index is the index of the first character of the word
+// The end index is after the last character of the word and may be out of array bounds
+fn (mut tv TextView) get_word_bounds() (int, int) {
 	mut ustr := tv.text.runes()
-	ustr.delete(tv.cursor_pos)
+	if ustr.len == 0 {
+		return 0, 0
+	}
+	mut start := tv.cursor_pos
+	mut end := tv.cursor_pos
+
+	// find the start of the word
+	start_search: for start > 0 {
+		for sc in word_separator {
+			if ustr[start - 1] == sc {
+				break start_search
+			}
+		}
+		start--
+	}
+
+	// find the end of the word
+	end_search: for end < ustr.len {
+		for sc in word_separator {
+			if ustr[end] == sc {
+				break end_search
+			}
+		}
+		end++
+	}
+	return start, end
+}
+
+fn (mut tv TextView) delete_cur(count int) {
+	mut ustr := tv.text.runes()
+	total := math.min(count, ustr.len - tv.cursor_pos)
+	if total == 0 {
+		return
+	}
+	ustr.delete_many(tv.cursor_pos, total)
 	unsafe {
 		*tv.text = ustr.string()
 	}
@@ -346,42 +387,14 @@ fn (mut tv TextView) delete_cur_char() {
 	tv.update_lines()
 }
 
-fn (mut tv TextView) delete_prev_char() {
-	if tv.cursor_pos <= 0 {
-		tv.cursor_pos = 0
+fn (mut tv TextView) delete_prev(count int) {
+	mut ustr := tv.text.runes()
+	total := math.min(count, tv.cursor_pos)
+	if total == 0 {
 		return
 	}
-	mut ustr := tv.text.runes()
-	tv.cursor_pos--
-	ustr.delete(tv.cursor_pos)
-	unsafe {
-		*tv.text = ustr.string()
-	}
-	tv.refresh_visible_lines()
-	tv.update_lines()
-}
-
-fn (mut tv TextView) delete_prev_word() {
-	if tv.cursor_pos <= 0 {
-		tv.cursor_pos = 0
-		return
-	}
-	mut ustr := tv.text.runes()
-	// Delete until previous whitespace
-	// TODO!!!!
-	// mut i := tv.cursor_pos
-	// for {
-	// 	if i > 0 {
-	// 		i--
-	// 	}
-	// 	if text[i].is_space() || i == 0 {
-	// 		// unsafe { *tb.text = u[..i) + u.right(tb.cursor_pos_i]}
-	// 		break
-	// 	}
-	// }
-	// tb.cursor_pos_i = i
-	tv.cursor_pos--
-	ustr.delete(tv.cursor_pos)
+	tv.cursor_pos -= total
+	ustr.delete_many(tv.cursor_pos, total)
 	unsafe {
 		*tv.text = ustr.string()
 	}
@@ -591,7 +604,7 @@ fn (mut tv TextView) key_char(e &KeyEvent) {
 	// println(e.key)
 	// println('mods=$e.mods')
 	defer {
-		if tv.tb.on_change != TextBoxFn(0) {
+		if tv.tb.on_change != unsafe { TextBoxFn(0) } {
 			if e.key == .backspace {
 				tv.tb.on_change(tv.tb)
 			}
@@ -608,7 +621,7 @@ fn (mut tv TextView) key_down(e &KeyEvent) {
 	// println('tv key down $e')
 	// println('key_down: $e.key mods=$e.mods')
 	defer {
-		if tv.tb.on_change != TextBoxFn(0) {
+		if tv.tb.on_change != unsafe { TextBoxFn(0) } {
 			if e.key == .backspace {
 				tv.tb.on_change(tv.tb)
 			}
@@ -651,33 +664,93 @@ fn (mut tv TextView) key_down(e &KeyEvent) {
 			if tv.is_sel_active() {
 				tv.delete_selection()
 			} else if e.mods in [.super, .ctrl] {
-				// Delete until previous whitespace
-				// mut i := tv.tlv.cursor_pos_i
-				// for {
-				// 	if i > 0 {
-				// 		i--
-				// 	}
-				// 	if text[i].is_space() || i == 0 {
-				// 		// unsafe { *tb.text = u[..i) + u.right(tb.cursor_pos_i]}
-				// 		break
-				// 	}
-				// }
-				// tb.cursor_pos_i = i
+				// Delete until previous separator
+				word_start, _ := if ctrl_key(e.mods) {
+					tv.get_word_bounds()
+				} else {
+					0, 0
+				}
+				if word_start == tv.cursor_pos {
+					// Delete just one character (probably a separator)
+					tv.delete_prev(1)
+				} else {
+					tv.delete_prev(tv.cursor_pos - word_start)
+				}
 			} else {
 				// Delete just one character
-				tv.delete_prev_char()
+				tv.delete_prev(1)
 			}
 			tv.cursor_allways_visible()
 		}
 		.delete {
 			tv.tb.ui.show_cursor = true
-			tv.delete_cur_char()
+			// println('backspace cursor_pos=($tv.tlv.cursor_pos_i, $tv.tlv.cursor_pos_j) len=${(*tv.text).len} \n <${*tv.text}>')
+			if *tv.text == '' {
+				return
+			}
+			// Delete the entire selection
+			if tv.is_sel_active() {
+				tv.delete_selection()
+			} else if e.mods in [.super, .ctrl] {
+				// Delete until previous separator
+				_, word_end := if ctrl_key(e.mods) {
+					tv.get_word_bounds()
+				} else {
+					0, 0
+				}
+				if word_end == tv.cursor_pos {
+					// Delete just one character (probably a separator)
+					tv.delete_cur(1)
+				} else {
+					tv.delete_cur(word_end - tv.cursor_pos)
+				}
+			} else {
+				// Delete just one character
+				tv.delete_cur(1)
+			}
 			tv.cursor_allways_visible()
 		}
-		.left, .right, .up, .down {
+		.left, .right {
+			ustr := tv.text.runes()
+			word_start, word_end := if shift_key(e.mods) || ctrl_key(e.mods) {
+				tv.get_word_bounds()
+			} else {
+				// If shift and ctrl are not pressed, calculating the word bounds is not necessary
+				0, 0
+			}
+
+			move_amount := if e.key == .left {
+				if ctrl_key(e.mods) && word_start < tv.cursor_pos {
+					-(tv.cursor_pos - word_start)
+				} else {
+					-1
+				}
+			} else {
+				if ctrl_key(e.mods) && word_end > tv.cursor_pos {
+					word_end - tv.cursor_pos
+				} else {
+					1
+				}
+			}
+			move_target := math.min(math.max(tv.cursor_pos + move_amount, 0), ustr.len)
+
+			if shift_key(e.mods) {
+				if !tv.is_sel_active() {
+					tv.tb.sel_active = true
+					tv.sel_start = tv.cursor_pos
+					tv.tb.ui.show_cursor = false
+				}
+				tv.cursor_pos = move_target
+				tv.sel_end = tv.cursor_pos
+				tv.sync_text_lines()
+			} else {
+				tv.cancel_selection()
+				tv.tb.ui.show_cursor = true
+				tv.cursor_pos = move_target
+			}
+		}
+		.up, .down {
 			dir := match e.key {
-				.left { Side.left }
-				.right { Side.right }
 				.up { Side.top }
 				else { Side.bottom }
 			}
@@ -722,8 +795,7 @@ pub fn (mut tv TextView) do_indent(shift bool) {
 			if shift {
 				if tv.tlv.lines[j][..2] == '  ' {
 					tv.sel_end -= 2
-					tv.delete_cur_char()
-					tv.delete_cur_char()
+					tv.delete_cur(2)
 				}
 			} else {
 				tv.sel_end += 2
@@ -804,7 +876,7 @@ pub fn (mut tv TextView) do_zoom_up() {
 	tv.update_lines()
 }
 
-[params]
+@[params]
 pub struct LogViewParams {
 	nb_lines int = 5
 }
@@ -870,15 +942,17 @@ pub fn (mut tv TextView) scroll_y_to_end() {
 }
 
 fn (mut tv TextView) word_wrap_text() {
-	lines := (*tv.text).split('\n')
-	mut word_wrapped_lines := []string{}
-	// println('word_wrap_text: $tv.tlv.from_j -> $tv.tlv.to_j')
-	for line in lines {
-		ww_lines := tv.word_wrap_line(line)
-		word_wrapped_lines << ww_lines
+	if tv.tb.text != unsafe { nil } {
+		lines := (*tv.tb.text).split('\n')
+		mut word_wrapped_lines := []string{}
+		// println('word_wrap_text: $tv.tlv.from_j -> $tv.tlv.to_j')
+		for line in lines {
+			ww_lines := tv.word_wrap_line(line)
+			word_wrapped_lines << ww_lines
+		}
+		// println('tl: $lines \n $word_wrapped_lines.len $word_wrapped_lines')
+		tv.tlv.lines = word_wrapped_lines
 	}
-	// println('tl: $lines \n $word_wrapped_lines.len $word_wrapped_lines')
-	tv.tlv.lines = word_wrapped_lines
 }
 
 fn (tv &TextView) word_wrap_line(s string) []string {
@@ -887,16 +961,17 @@ fn (tv &TextView) word_wrap_line(s string) []string {
 	}
 	words := s.split(' ')
 	max_line_width := tv.tb.width
+	// println("max_line_width = $max_line_width")
 	mut line := ''
-	mut line_width := 0
+	mut line_width := 0.0
 	mut text_lines := []string{}
 	for i, word in words {
 		if i == 0 { // at least the first
 			line = word
-			line_width = tv.text_width(word)
+			line_width = tv.text_width_additive(word)
 		} else {
-			word_width := tv.text_width(' ' + word)
-			if line_width + word_width < max_line_width {
+			word_width := tv.text_width_additive(' ' + word)
+			if line_width + word_width < max_line_width - wordwrap_border {
 				line += ' ' + word
 				line_width += word_width
 			} else {
@@ -906,6 +981,7 @@ fn (tv &TextView) word_wrap_line(s string) []string {
 			}
 		}
 	}
+	// println('line_Width = ${line_width} (${s})')
 	if line_width > 0 {
 		text_lines << line
 	}

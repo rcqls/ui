@@ -6,7 +6,7 @@ import gx
 import math
 
 pub struct Factor {
-mut:
+pub mut:
 	levels []string
 	values []int
 }
@@ -19,13 +19,13 @@ enum GridType {
 	dd_factor
 }
 
-type GridData = Factor | []bool | []f64 | []int | []string
+pub type GridData = Factor | []bool | []f64 | []int | []string
 
-[heap]
+@[heap]
 pub struct GridComponent {
 pub mut:
 	id           string
-	layout       &ui.CanvasLayout
+	layout       &ui.CanvasLayout = unsafe { nil }
 	vars         []GridVar
 	types        []GridType
 	formula_mngr GridFormulaMngr
@@ -76,8 +76,9 @@ pub mut:
 	shortcuts ui.Shortcuts
 }
 
-[params]
+@[params]
 pub struct GridParams {
+pub:
 	vars         map[string]GridData
 	formulas     map[string]string
 	width        int  = 100
@@ -85,35 +86,35 @@ pub struct GridParams {
 	scrollview   bool = true
 	is_focused   bool
 	fixed_height bool = true
-mut:
+pub mut:
 	id string
 }
 
 // TODO: documentation
 pub fn grid_canvaslayout(p GridParams) &ui.CanvasLayout {
 	mut layout := ui.canvas_layout(
-		id: ui.component_id(p.id, 'layout')
-		scrollview: p.scrollview
-		is_focused: p.is_focused
-		on_draw: grid_draw
-		on_post_draw: grid_post_draw
-		on_click: grid_click
-		on_mouse_down: grid_mouse_down
-		on_mouse_up: grid_mouse_up
-		on_scroll: grid_scroll
-		on_mouse_move: grid_mouse_move
-		on_key_down: grid_key_down
-		on_char: grid_char
-		full_size_fn: grid_full_size
+		id:               ui.component_id(p.id, 'layout')
+		scrollview:       p.scrollview
+		is_focused:       p.is_focused
+		on_draw:          grid_draw
+		on_post_draw:     grid_post_draw
+		on_click:         grid_click
+		on_mouse_down:    grid_mouse_down
+		on_mouse_up:      grid_mouse_up
+		on_scroll:        grid_scroll
+		on_mouse_move:    grid_mouse_move
+		on_key_down:      grid_key_down
+		on_char:          grid_char
+		full_size_fn:     grid_full_size
 		on_scroll_change: grid_scroll_change
 	)
 	mut dd := map[string]&ui.Dropdown{}
 	mut g := &GridComponent{
-		id: p.id
-		layout: layout
-		headers: p.vars.keys()
-		tb_string: ui.textbox(id: ui.component_id(p.id, 'tb_ro'))
-		cb_bool: ui.checkbox(id: ui.component_id(p.id, 'cb_ro'), justify: [0.5, 0.5])
+		id:           p.id
+		layout:       layout
+		headers:      p.vars.keys()
+		tb_string:    ui.textbox(id: ui.component_id(p.id, 'tb_ro'))
+		cb_bool:      ui.checkbox(id: ui.component_id(p.id, 'cb_ro'), justify: [0.5, 0.5])
 		formula_mngr: grid_formula_mngr(p.formulas)
 	}
 	ui.component_connect(g, layout)
@@ -126,9 +127,9 @@ pub fn grid_canvaslayout(p GridParams) &ui.CanvasLayout {
 				g.types << .cb_bool
 				g.set_check_nrow(var.len)
 				g.vars << grid_checkbox(
-					id: ui.component_id(p.id, 'cb_' + name)
+					id:   ui.component_id(p.id, 'cb_' + name)
 					grid: g
-					var: var
+					var:  var
 				)
 			}
 			[]int {
@@ -141,27 +142,27 @@ pub fn grid_canvaslayout(p GridParams) &ui.CanvasLayout {
 				g.types << .tb_string
 				g.set_check_nrow(var.len)
 				g.vars << grid_textbox(
-					id: ui.component_id(p.id, 'tb_' + name)
+					id:   ui.component_id(p.id, 'tb_' + name)
 					grid: g
-					var: var
+					var:  var
 				)
 			}
 			Factor {
 				g.types << .dd_factor
 				g.set_check_nrow(var.values.len)
 				dd[name] = ui.dropdown(
-					id: ui.component_id(p.id, 'dd_ro_' + name)
+					id:    ui.component_id(p.id, 'dd_ro_' + name)
 					texts: var.levels
 				)
 				g.vars << grid_dropdown(
-					id: ui.component_id(p.id, 'dd_' + name)
+					id:   ui.component_id(p.id, 'dd_' + name)
 					grid: g
 					name: name
-					var: var
+					var:  var
 				)
 				mut dd_sel := ui.dropdown(
-					id: ui.component_id(p.id, 'dd_sel_' + name)
-					texts: var.levels
+					id:                   ui.component_id(p.id, 'dd_sel_' + name)
+					texts:                var.levels
 					on_selection_changed: grid_dd_changed
 				)
 				dd_sel.set_visible(false)
@@ -173,7 +174,7 @@ pub fn grid_canvaslayout(p GridParams) &ui.CanvasLayout {
 	}
 	// textbox formula
 	mut tb_formula := ui.textbox(
-		id: ui.component_id(p.id, 'tb_formula')
+		id:       ui.component_id(p.id, 'tb_formula')
 		on_enter: grid_tb_formula_enter
 	)
 	tb_formula.set_visible(false)
@@ -182,7 +183,7 @@ pub fn grid_canvaslayout(p GridParams) &ui.CanvasLayout {
 	ui.component_connect(g, tb_formula)
 	// textbox selector
 	mut tb_sel := ui.textbox(
-		id: ui.component_id(p.id, 'tb_sel')
+		id:       ui.component_id(p.id, 'tb_sel')
 		on_enter: grid_tb_enter
 		// on_char: grid_tb_char
 	)
@@ -194,7 +195,7 @@ pub fn grid_canvaslayout(p GridParams) &ui.CanvasLayout {
 
 	// checkbox selector
 	mut cb_sel := ui.checkbox(
-		id: ui.component_id(p.id, 'cb_sel')
+		id:       ui.component_id(p.id, 'cb_sel')
 		on_click: grid_cb_clicked
 	)
 	// println("cb_sel $cb_sel.id created inside $p.id")
@@ -205,16 +206,16 @@ pub fn grid_canvaslayout(p GridParams) &ui.CanvasLayout {
 
 	// column bar textbox
 	g.tb_colbar = ui.textbox(
-		id: ui.component_id(p.id, 'tb_colbar')
-		bg_color: gx.light_blue
+		id:        ui.component_id(p.id, 'tb_colbar')
+		bg_color:  gx.light_blue
 		read_only: true
 	)
 	g.tb_colbar.set_visible(false)
 
 	// row bar textbox
 	g.tb_rowbar = ui.textbox(
-		id: ui.component_id(p.id, 'tb_rowbar')
-		bg_color: gx.light_gray
+		id:        ui.component_id(p.id, 'tb_rowbar')
+		bg_color:  gx.light_gray
 		read_only: true
 	)
 	g.tb_rowbar.set_visible(false)
@@ -912,7 +913,7 @@ pub fn (mut g GridComponent) scroll_y_to_end() {
 // GridVar interface and its "instances"
 
 interface GridVar {
-	id string
+	id   string
 	grid &GridComponent
 	compare(a int, b int) int
 	draw_device(mut d ui.DrawDevice, j int, mut g GridComponent)
@@ -922,7 +923,7 @@ mut:
 }
 
 // TextBox GridVar
-[heap]
+@[heap]
 struct GridTextBox {
 	grid &GridComponent = unsafe { nil }
 mut:
@@ -940,7 +941,7 @@ pub struct GridTextBoxParams {
 pub fn grid_textbox(p GridTextBoxParams) &GridTextBox {
 	return &GridTextBox{
 		grid: p.grid
-		var: p.var
+		var:  p.var
 	}
 }
 
@@ -988,7 +989,7 @@ fn (gtb &GridTextBox) draw_device(mut d ui.DrawDevice, j int, mut g GridComponen
 }
 
 // Dropdown GridVar
-[heap]
+@[heap]
 struct GridDropdown {
 	grid &GridComponent = unsafe { nil }
 mut:
@@ -1008,7 +1009,7 @@ pub struct GridDropdownParams {
 pub fn grid_dropdown(p GridDropdownParams) &GridDropdown {
 	return &GridDropdown{
 		grid: p.grid
-		var: p.var
+		var:  p.var
 		name: p.name
 	}
 }
@@ -1053,7 +1054,7 @@ fn (gdd &GridDropdown) draw_device(mut d ui.DrawDevice, j int, mut g GridCompone
 }
 
 // CheckBox GridVar
-[heap]
+@[heap]
 struct GridCheckBox {
 	grid &GridComponent = unsafe { nil }
 mut:
@@ -1070,9 +1071,9 @@ pub struct GridCheckBoxParams {
 // TODO: documentation
 pub fn grid_checkbox(p GridCheckBoxParams) &GridCheckBox {
 	return &GridCheckBox{
-		id: p.id
+		id:   p.id
 		grid: p.grid
-		var: p.var
+		var:  p.var
 	}
 }
 

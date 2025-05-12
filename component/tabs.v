@@ -8,14 +8,14 @@ enum TabsMode {
 	horizontal
 }
 
-[heap]
+@[heap]
 pub struct TabsComponent {
 pub mut:
 	id                 string
-	layout             &ui.Stack // required
+	layout             &ui.Stack = unsafe { nil } // required
 	active             string
 	prev_active        string
-	tab_bar            &ui.Stack
+	tab_bar            &ui.Stack = unsafe { nil }
 	pages              map[string]ui.Widget
 	z_index            map[string]int
 	mode               TabsMode
@@ -27,8 +27,9 @@ pub mut:
 	justify            []f64    = ui.center_center
 }
 
-[params]
+@[params]
 pub struct TabsParams {
+pub:
 	id          string
 	mode        TabsMode = .vertical
 	active      int
@@ -46,21 +47,26 @@ pub fn tabs_stack(c TabsParams) &ui.Stack {
 	for i, tab in c.tabs {
 		println(tab_id(c.id, i) + '_label')
 		children << ui.canvas_layout(
-			id: tab_id(c.id, i)
+			id:       tab_id(c.id, i)
 			on_click: tab_click
 			// bg_color: gx.white
 			on_key_down: tab_key_down
-			children: [
-				ui.label(id: tab_id(c.id, i) + '_label', text: tab),
+			children:    [
+				ui.row(
+					id:       tab_id(c.id, i) + '_row'
+					children: [
+						ui.label(id: tab_id(c.id, i) + '_label', text: tab),
+					]
+				),
 			]
 		)
 	}
 	// Layout
 	mut tab_bar := ui.row(
-		id: '${c.id}_tabbar'
-		widths: c.tab_width
-		heights: c.tab_height
-		spacing: c.tab_spacing
+		id:       '${c.id}_tabbar'
+		widths:   c.tab_width
+		heights:  c.tab_height
+		spacing:  c.tab_spacing
 		children: children
 	)
 
@@ -73,9 +79,9 @@ pub fn tabs_stack(c TabsParams) &ui.Stack {
 	// println('active: $tab_active')
 
 	mut layout := ui.column(
-		id: ui.component_id(c.id, 'layout')
-		widths: [ui.compact, ui.stretch]
-		heights: [ui.compact, ui.stretch]
+		id:       ui.component_id(c.id, 'layout')
+		widths:   [ui.compact, ui.stretch]
+		heights:  [ui.compact, ui.stretch]
 		children: [
 			tab_bar,
 			m_pages[tab_active],
@@ -83,14 +89,14 @@ pub fn tabs_stack(c TabsParams) &ui.Stack {
 	)
 
 	mut tabs := &TabsComponent{
-		id: c.id
-		layout: layout
-		active: tab_active
-		tab_bar: tab_bar
-		pages: m_pages
-		mode: c.mode
-		tab_width: c.tab_width
-		tab_height: c.tab_height
+		id:          c.id
+		layout:      layout
+		active:      tab_active
+		tab_bar:     tab_bar
+		pages:       m_pages
+		mode:        c.mode
+		tab_width:   c.tab_width
+		tab_height:  c.tab_height
 		tab_spacing: c.tab_spacing
 	}
 
@@ -259,7 +265,8 @@ fn (tabs &TabsComponent) update_pos(win &ui.Window) {
 		// println("$dx, $dy $lab.x $lab.y")
 		lab.set_pos(dx, dy)
 		// println("$dx, $dy $lab.x $lab.y")
+		row_id := tab_id(tabs.id, i) + '_row'
 		mut c := win.get_or_panic[ui.CanvasLayout](tab_id(tabs.id, i))
-		c.set_child_relative_pos(lab_id, dx, dy)
+		c.set_child_relative_pos(row_id, dx, dy)
 	}
 }

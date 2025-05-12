@@ -5,20 +5,19 @@ import gx
 import math
 import regex
 
-const (
-	no_cell = GridCell{-1, -1}
-)
+const no_cell = GridCell{-1, -1}
 
 // Spreadsheet-like (ex: A1, B4, ...)
-type AlphaCell = string
+pub type AlphaCell = string
 
 // Spreadsheet-like (ex: A1:B4, Z12:AB13, ...)
-type AlphaCellBlock = string
+pub type AlphaCellBlock = string
 
-type ActiveCells = AlphaCell | AlphaCellBlock
+pub type ActiveCells = AlphaCell | AlphaCellBlock
 
 // Matrix-like (zero indexed)
 pub struct GridCell {
+pub:
 	i int
 	j int
 }
@@ -92,7 +91,7 @@ fn (mut gfm GridFormulaMngr) init_formula(cell string, mut formula GridFormula) 
 pub fn (mut g GridComponent) new_formula(gc GridCell, formula string) {
 	ac := gc.alphacell()
 	g.formula_mngr.formulas[ac] = GridFormula{
-		cell: gc
+		cell:    gc
 		formula: formula
 	}
 	g.formula_mngr.init_formula(ac, mut g.formula_mngr.formulas[ac])
@@ -184,7 +183,7 @@ pub fn grid_formulas(formulas map[string]string) map[string]GridFormula {
 	mut res := map[string]GridFormula{}
 	for k, v in formulas {
 		res[k] = GridFormula{
-			cell: AlphaCell(k).gridcell()
+			cell:    AlphaCell(k).gridcell()
 			formula: v
 		}
 	}
@@ -326,7 +325,7 @@ pub fn (ac AlphaCell) gridcell() GridCell {
 		aci := re.get_group_by_name(ac, 'row').int() - 1
 		return GridCell{aci, base26_to_int(acj)}
 	} else {
-		return component.no_cell
+		return no_cell
 	}
 }
 

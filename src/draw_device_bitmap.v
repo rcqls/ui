@@ -3,17 +3,17 @@ module ui
 import gx
 import gg
 import ui.libvg
-import math
 
 struct DrawDeviceBitmap {
-	id string = 'dd_bitmap'
+	id string                 = 'dd_bitmap'
 	ts &libvg.BitmapTextStyle = unsafe { nil }
 pub mut:
 	r &libvg.Raster = unsafe { nil }
 }
 
-[params]
+@[params]
 pub struct DrawDeviceBitmapParams {
+pub:
 	id string = 'dd_bitmap'
 }
 
@@ -152,16 +152,16 @@ pub fn (d &DrawDeviceBitmap) set_clipping(rect Rect) {
 // TODO: documentation
 pub fn (d &DrawDeviceBitmap) get_clipping() Rect {
 	// TODO: implement
-	return Rect{0, 0, math.max_i32, math.max_i32}
+	return Rect{0, 0, int(max_i32), int(max_i32)}
 }
 
 // TODO: documentation
-pub fn (d &DrawDeviceBitmap) draw_pixel(x f32, y f32, color gx.Color) {
+pub fn (d &DrawDeviceBitmap) draw_pixel(x f32, y f32, color gx.Color, params gg.DrawPixelConfig) {
 	// println("$d.id draw_pixel($x, $y, $color)")
 }
 
 // TODO: documentation
-pub fn (d &DrawDeviceBitmap) draw_pixels(points []f32, color gx.Color) {
+pub fn (d &DrawDeviceBitmap) draw_pixels(points []f32, color gx.Color, params gg.DrawPixelConfig) {
 	// println("$d.id draw_pixels($points, $color)")
 }
 

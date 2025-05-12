@@ -8,16 +8,16 @@ import ui.libvg
 
 type RasterViewFn = fn (rv &RasterViewComponent)
 
-[heap]
+@[heap]
 pub struct RasterViewComponent {
 pub mut:
 	id     string
-	layout &ui.CanvasLayout
-	r      &libvg.Raster
+	layout &ui.CanvasLayout = unsafe { nil }
+	r      &libvg.Raster    = unsafe { nil }
 	// width      int
 	// height     int
 	// channels   int = 4
-	// data       []byte
+	// data       []u8
 	size       int = 11 // pixel_size + inter
 	inter      int = 1
 	pixel_size int = 10
@@ -40,52 +40,53 @@ pub mut:
 	from_j int
 	to_j   int
 	// current color
-	color   gx.Color = gx.black
+	color   gx.Color               = gx.black
 	palette &ColorPaletteComponent = unsafe { nil }
 	// shortcuts
 	key_shortcuts  ui.KeyShortcuts
 	char_shortcuts ui.CharShortcuts
 	// callback
-	on_click RasterViewFn
+	on_click RasterViewFn = unsafe { RasterViewFn(0) }
 }
 
-[params]
+@[params]
 pub struct RasterViewParams {
+pub:
 	id       string
-	width    int = 16
-	height   int = 16
-	channels int = 4
-	on_click RasterViewFn = RasterViewFn(0)
+	width    int          = 16
+	height   int          = 16
+	channels int          = 4
+	on_click RasterViewFn = unsafe { RasterViewFn(0) }
 }
 
 // TODO: documentation
 pub fn rasterview_canvaslayout(p RasterViewParams) &ui.CanvasLayout {
 	mut layout := ui.canvas_layout(
-		id: ui.component_id(p.id, 'layout')
-		scrollview: true
-		justify: [0.5, 0.5]
-		on_draw: rv_draw
-		on_click: rv_click
-		on_mouse_down: rv_mouse_down
-		on_mouse_up: rv_mouse_up
-		on_scroll: rv_scroll
-		on_mouse_move: rv_mouse_move
-		on_mouse_enter: rv_mouse_enter
-		on_mouse_leave: rv_mouse_leave
-		on_key_down: rv_key_down
-		full_size_fn: rv_full_size
+		id:               ui.component_id(p.id, 'layout')
+		scrollview:       true
+		justify:          [0.5, 0.5]
+		on_draw:          rv_draw
+		on_click:         rv_click
+		on_mouse_down:    rv_mouse_down
+		on_mouse_up:      rv_mouse_up
+		on_scroll:        rv_scroll
+		on_mouse_move:    rv_mouse_move
+		on_mouse_enter:   rv_mouse_enter
+		on_mouse_leave:   rv_mouse_leave
+		on_key_down:      rv_key_down
+		full_size_fn:     rv_full_size
 		on_scroll_change: rv_scroll_change
 	)
 	rv := &RasterViewComponent{
-		id: p.id
+		id:     p.id
 		layout: layout
 		// width: p.width
 		// height: p.height
 		// channels: p.channels
-		// data: []byte{len: p.width * p.height * p.channels}
-		r: libvg.raster(
-			width: p.width
-			height: p.height
+		// data: []u8{len: p.width * p.height * p.channels}
+		r:        libvg.raster(
+			width:    p.width
+			height:   p.height
 			channels: p.channels
 		)
 		on_click: p.on_click
@@ -211,7 +212,7 @@ fn rv_key_down(c &ui.CanvasLayout, e ui.KeyEvent) {
 fn rv_click(c &ui.CanvasLayout, e ui.MouseEvent) {
 	mut rv := rasterview_component(c)
 	rv.sel_i, rv.sel_j = rv.get_index_pos(e.x, e.y)
-	if rv.on_click != RasterViewFn(0) {
+	if rv.on_click != unsafe { RasterViewFn(0) } {
 		rv.on_click(rv)
 	}
 }
@@ -556,7 +557,7 @@ pub fn (rv &RasterViewComponent) channels() int {
 }
 
 // TODO: documentation
-pub fn (rv &RasterViewComponent) data() &byte {
+pub fn (rv &RasterViewComponent) data() &u8 {
 	return rv.r.data.data
 }
 

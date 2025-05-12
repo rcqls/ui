@@ -2,19 +2,17 @@ import ui
 import ui.component as uic
 import os
 
-const (
-	win_width  = 500
-	win_height = 500
-)
+const win_width = 500
+const win_height = 500
 
 fn main() {
 	window := ui.window(
-		width: win_width
-		height: win_height
-		title: 'Grid'
-		mode: .resizable
+		width:   win_width
+		height:  win_height
+		title:   'Grid'
+		mode:    .resizable
 		on_init: win_init
-		layout: ui.row(
+		layout:  ui.row(
 			children: [
 				uic.rasterview_canvaslayout(
 					id: 'rv'

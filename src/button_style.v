@@ -19,12 +19,12 @@ pub struct ButtonStyle {
 pub mut:
 	text_font_name      string = 'system'
 	text_color          gx.Color
-	text_size           int = 16
+	text_size           int                 = 16
 	text_align          TextHorizontalAlign = .center
 	text_vertical_align TextVerticalAlign   = .middle
 }
 
-[params]
+@[params]
 pub struct ButtonStyleParams {
 	WidgetTextStyleParams
 pub mut:

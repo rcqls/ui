@@ -4,21 +4,22 @@ import ui
 
 type MessageBoxFn = fn (&MessageBoxComponent)
 
-[heap]
+@[heap]
 pub struct MessageBoxComponent {
 	id       string
-	layout   &ui.Stack
-	tb       &ui.TextBox
-	btn      &ui.Button
+	layout   &ui.Stack   = unsafe { nil }
+	tb       &ui.TextBox = unsafe { nil }
+	btn      &ui.Button  = unsafe { nil }
 	text     string
-	on_click MessageBoxFn
+	on_click MessageBoxFn = unsafe { MessageBoxFn(0) }
 }
 
-[params]
+@[params]
 pub struct MessageBoxParams {
+pub:
 	id       string
 	text     string
-	on_click MessageBoxFn
+	on_click MessageBoxFn = unsafe { MessageBoxFn(0) }
 	width    int
 	height   int
 }
@@ -26,29 +27,29 @@ pub struct MessageBoxParams {
 // TODO: documentation
 pub fn messagebox_stack(p MessageBoxParams) &ui.Stack {
 	mut tb := ui.textbox(
-		id: ui.component_id(p.id, 'textbox')
-		mode: .multiline | .read_only
+		id:        ui.component_id(p.id, 'textbox')
+		mode:      .multiline | .read_only
 		text_size: 24
-		bg_color: ui.color_solaris_transparent
+		bg_color:  ui.color_solaris_transparent
 	)
 	ok_btn := ui.button(
-		id: ui.component_id(p.id, 'ok_btn')
-		text: 'Ok'
+		id:       ui.component_id(p.id, 'ok_btn')
+		text:     'Ok'
 		on_click: messagebox_ok_click
 	)
 	layout := ui.column(
-		id: ui.component_id(p.id, 'layout')
-		width: p.width
-		height: p.height
-		heights: [ui.stretch, 30]
+		id:       ui.component_id(p.id, 'layout')
+		width:    p.width
+		height:   p.height
+		heights:  [ui.stretch, 30]
 		children: [tb, ok_btn]
 	)
 	hc := &MessageBoxComponent{
-		id: p.id
-		layout: layout
-		text: p.text
-		tb: tb
-		btn: ok_btn
+		id:       p.id
+		layout:   layout
+		text:     p.text
+		tb:       tb
+		btn:      ok_btn
 		on_click: p.on_click
 	}
 	unsafe {
@@ -70,7 +71,7 @@ pub fn messagebox_component_from_id(w ui.Window, id string) &MessageBoxComponent
 
 fn messagebox_ok_click(b &ui.Button) {
 	hc := messagebox_component(b)
-	if hc.on_click != MessageBoxFn(0) {
+	if hc.on_click != unsafe { MessageBoxFn(0) } {
 		hc.on_click(hc)
 	}
 }

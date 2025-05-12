@@ -1,5 +1,5 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
@@ -7,7 +7,7 @@ import gg
 
 pub type DrawFn = fn (ctx &gg.Context, c &Canvas) // x_offset int, y_offset int)
 
-[heap]
+@[heap]
 pub struct Canvas {
 pub mut:
 	id       string
@@ -28,8 +28,9 @@ mut:
 	draw_fn DrawFn = unsafe { nil }
 }
 
-[params]
+@[params]
 pub struct CanvasParams {
+pub:
 	id       string
 	width    int
 	height   int
@@ -41,11 +42,11 @@ pub struct CanvasParams {
 
 pub fn canvas(c CanvasParams) &Canvas {
 	mut canvas := &Canvas{
-		id: c.id
-		width: c.width
-		height: c.height
-		z_index: c.z_index
-		draw_fn: c.draw_fn
+		id:       c.id
+		width:    c.width
+		height:   c.height
+		z_index:  c.z_index
+		draw_fn:  c.draw_fn
 		clipping: c.clipping
 	}
 	return canvas
@@ -53,16 +54,16 @@ pub fn canvas(c CanvasParams) &Canvas {
 
 fn (mut c Canvas) init(parent Layout) {
 	c.parent = parent
-	ui := parent.get_ui()
-	c.ui = ui
+	u := parent.get_ui()
+	c.ui = u
 }
 
-[manualfree]
+@[manualfree]
 pub fn (mut c Canvas) cleanup() {
 	unsafe { c.free() }
 }
 
-[unsafe]
+@[unsafe]
 pub fn (c &Canvas) free() {
 	$if free ? {
 		print('canvas ${c.id}')

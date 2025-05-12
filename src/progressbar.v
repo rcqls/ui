@@ -1,9 +1,9 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
-[heap]
+@[heap]
 pub struct ProgressBar {
 pub mut:
 	id       string
@@ -28,9 +28,10 @@ pub mut:
 	component voidptr
 }
 
-[params]
+@[params]
 pub struct ProgressBarParams {
 	ProgressBarStyleParams
+pub:
 	id      string
 	width   int
 	height  int = 16
@@ -43,15 +44,15 @@ pub struct ProgressBarParams {
 
 pub fn progressbar(c ProgressBarParams) &ProgressBar {
 	mut pb := &ProgressBar{
-		id: c.id
-		height: c.height
-		width: c.width
-		z_index: c.z_index
-		min: c.min
-		max: c.max
-		val: c.val
+		id:           c.id
+		height:       c.height
+		width:        c.width
+		z_index:      c.z_index
+		min:          c.min
+		max:          c.max
+		val:          c.val
 		style_params: c.ProgressBarStyleParams
-		ui: 0
+		ui:           unsafe { nil }
 	}
 	pb.style_params.style = c.theme
 	return pb
@@ -59,17 +60,17 @@ pub fn progressbar(c ProgressBarParams) &ProgressBar {
 
 fn (mut pb ProgressBar) init(parent Layout) {
 	pb.parent = parent
-	ui := parent.get_ui()
-	pb.ui = ui
+	u := parent.get_ui()
+	pb.ui = u
 	pb.load_style()
 }
 
-[manualfree]
+@[manualfree]
 pub fn (mut pb ProgressBar) cleanup() {
 	unsafe { pb.free() }
 }
 
-[unsafe]
+@[unsafe]
 pub fn (pb &ProgressBar) free() {
 	$if free ? {
 		print('progress_bar ${pb.id}')

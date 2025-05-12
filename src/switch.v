@@ -1,24 +1,22 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
 import gx
 
-const (
-	sw_height         = 20
-	sw_width          = 40
-	sw_dot_size       = 16
-	sw_open_bg_color  = gx.rgb(19, 206, 102)
-	sw_close_bg_color = gx.rgb(220, 223, 230)
-	sw_focus_bg_color = gx.rgb(50, 50, 50)
-)
+const sw_height = 20
+const sw_width = 40
+const sw_dot_size = 16
+const sw_open_bg_color = gx.rgb(19, 206, 102)
+const sw_close_bg_color = gx.rgb(220, 223, 230)
+const sw_focus_bg_color = gx.rgb(50, 50, 50)
 
 type SwitchFn = fn (&Switch)
 
 type SwitchU32Fn = fn (&Switch, u32)
 
-[heap]
+@[heap]
 pub struct Switch {
 pub mut:
 	id          string
@@ -33,47 +31,48 @@ pub mut:
 	parent      Layout = empty_stack
 	is_focused  bool
 	open        bool
-	ui          &UI = unsafe { nil }
-	on_click    SwitchFn
-	on_key_down SwitchU32Fn
+	ui          &UI         = unsafe { nil }
+	on_click    SwitchFn    = unsafe { nil }
+	on_key_down SwitchU32Fn = unsafe { nil }
 	hidden      bool
 	// component state for composable widget
 	component voidptr
 }
 
-[params]
+@[params]
 pub struct SwitchParams {
+pub:
 	id          string
 	z_index     int
-	on_click    SwitchFn
-	on_key_down SwitchU32Fn
+	on_click    SwitchFn    = unsafe { nil }
+	on_key_down SwitchU32Fn = unsafe { nil }
 	open        bool
 }
 
 pub fn switcher(c SwitchParams) &Switch {
 	mut s := &Switch{
-		id: c.id
-		height: ui.sw_height
-		width: ui.sw_width
-		z_index: c.z_index
-		open: c.open
-		on_click: c.on_click
+		id:          c.id
+		height:      sw_height
+		width:       sw_width
+		z_index:     c.z_index
+		open:        c.open
+		on_click:    c.on_click
 		on_key_down: c.on_key_down
-		ui: 0
+		ui:          unsafe { nil }
 	}
 	return s
 }
 
 fn (mut s Switch) init(parent Layout) {
 	s.parent = parent
-	ui := parent.get_ui()
-	s.ui = ui
+	u := parent.get_ui()
+	s.ui = u
 	mut subscriber := parent.get_subscriber()
 	subscriber.subscribe_method(events.on_key_down, sw_key_down, s)
 	subscriber.subscribe_method(events.on_click, sw_click, s)
 }
 
-[manualfree]
+@[manualfree]
 pub fn (mut s Switch) cleanup() {
 	mut subscriber := s.parent.get_subscriber()
 	subscriber.unsubscribe_method(events.on_key_down, s)
@@ -81,7 +80,7 @@ pub fn (mut s Switch) cleanup() {
 	unsafe { s.free() }
 }
 
-[unsafe]
+@[unsafe]
 pub fn (s &Switch) free() {
 	$if free ? {
 		print('switch ${s.id}')
@@ -119,18 +118,17 @@ fn (mut s Switch) draw_device(mut d DrawDevice) {
 			println('Switch(${s.id}): (${s.x}, ${s.y}, ${s.width}, ${s.height})')
 		}
 	}
-	padding := (s.height - ui.sw_dot_size) / 2
+	padding := (s.height - sw_dot_size) / 2
 	if s.open {
-		d.draw_rect_filled(s.x, s.y, s.width, s.height, ui.sw_open_bg_color)
-		d.draw_rect_filled(s.x - padding + s.width - ui.sw_dot_size, s.y + padding, ui.sw_dot_size,
-			ui.sw_dot_size, gx.white)
+		d.draw_rect_filled(s.x, s.y, s.width, s.height, sw_open_bg_color)
+		d.draw_rect_filled(s.x - padding + s.width - sw_dot_size, s.y + padding, sw_dot_size,
+			sw_dot_size, gx.white)
 	} else {
-		d.draw_rect_filled(s.x, s.y, s.width, s.height, ui.sw_close_bg_color)
-		d.draw_rect_filled(s.x + padding, s.y + padding, ui.sw_dot_size, ui.sw_dot_size,
-			gx.white)
+		d.draw_rect_filled(s.x, s.y, s.width, s.height, sw_close_bg_color)
+		d.draw_rect_filled(s.x + padding, s.y + padding, sw_dot_size, sw_dot_size, gx.white)
 	}
 	if s.is_focused {
-		d.draw_rect_empty(s.x, s.y, s.width, s.height, ui.sw_focus_bg_color)
+		d.draw_rect_empty(s.x, s.y, s.width, s.height, sw_focus_bg_color)
 	}
 	$if bb ? {
 		debug_draw_bb_widget(mut s, s.ui)
@@ -154,14 +152,14 @@ fn sw_key_down(mut s Switch, e &KeyEvent, window &Window) {
 	if !s.is_focused {
 		return
 	}
-	if s.on_key_down != SwitchU32Fn(0) {
+	if s.on_key_down != unsafe { SwitchU32Fn(0) } {
 		s.on_key_down(s, e.codepoint)
 	} else {
 		// default behavior like click for space and enter
 		if e.key in [.enter, .space] {
 			// println("sw key as a click")
 			s.open = !s.open
-			if s.on_click != SwitchFn(0) {
+			if s.on_click != unsafe { SwitchFn(0) } {
 				s.on_click(s)
 			}
 		}
@@ -178,7 +176,7 @@ fn sw_click(mut s Switch, e &MouseEvent, w &Window) {
 	// <===== mouse position test added
 	if int(e.action) == 0 {
 		s.open = !s.open
-		if s.on_click != SwitchFn(0) {
+		if s.on_click != unsafe { SwitchFn(0) } {
 			s.on_click(s)
 		}
 	}

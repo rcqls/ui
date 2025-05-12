@@ -11,14 +11,15 @@ pub struct SettingFont {
 	param   string
 	lb_text string
 mut:
-	layout   &ui.Stack
-	lb_param &ui.Label
-	lb_font  &ui.Label
-	btn_font &ui.Button
+	layout   &ui.Stack  = unsafe { nil }
+	lb_param &ui.Label  = unsafe { nil }
+	lb_font  &ui.Label  = unsafe { nil }
+	btn_font &ui.Button = unsafe { nil }
 }
 
-[params]
+@[params]
 pub struct SettingFontParams {
+pub:
 	id    string
 	param string
 	text  string
@@ -30,14 +31,14 @@ pub fn setting_font(s SettingFontParams) &ui.Stack {
 	lb_font := ui.label(text: s.id)
 	btn_font := fontbutton(text: 'font', dtw: lb_font)
 	layout := ui.row(
-		widths: [100.0, 100, 20]
-		heights: 20.0
+		widths:   [100.0, 100, 20]
+		heights:  20.0
 		children: [lb_param, lb_font, btn_font]
 	)
 	sf := &SettingFont{
-		layout: layout
+		layout:   layout
 		lb_param: lb_param
-		lb_font: lb_font
+		lb_font:  lb_font
 		btn_font: btn_font
 	}
 	ui.component_connect(sf, layout, lb_param, lb_font)

@@ -1,13 +1,11 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
 import gx
 
-const (
-	radio_focus_color = gx.rgb(50, 50, 50)
-)
+const radio_focus_color = gx.rgb(50, 50, 50)
 
 /*
 enum RadioState {
@@ -17,7 +15,7 @@ enum RadioState {
 */
 type RadioFn = fn (radio &Radio)
 
-[heap]
+@[heap]
 pub struct Radio {
 pub mut:
 	id             string
@@ -58,14 +56,15 @@ pub mut:
 	// component state for composable widget
 	component voidptr
 	// selected_value string
-	on_click RadioFn
+	on_click RadioFn = unsafe { nil }
 }
 
-[params]
+@[params]
 pub struct RadioParams {
 	RadioStyleParams
+pub:
 	id       string
-	on_click RadioFn
+	on_click RadioFn = unsafe { nil }
 	values   []string
 	title    string
 	width    int
@@ -78,17 +77,17 @@ pub struct RadioParams {
 
 pub fn radio(c RadioParams) &Radio {
 	mut r := &Radio{
-		id: c.id
-		height: 20
-		z_index: c.z_index
-		values: c.values
-		title: c.title
-		width: c.width
+		id:           c.id
+		height:       20
+		z_index:      c.z_index
+		values:       c.values
+		title:        c.title
+		width:        c.width
 		style_params: c.RadioStyleParams
-		horizontal: c.horizontal
-		compact: c.compact
-		ui: 0
-		on_click: c.on_click
+		horizontal:   c.horizontal
+		compact:      c.compact
+		ui:           unsafe { nil }
+		on_click:     c.on_click
 	}
 	r.style_params.style = c.theme
 	r.update_size()
@@ -104,8 +103,8 @@ pub fn radio(c RadioParams) &Radio {
 
 fn (mut r Radio) init(parent Layout) {
 	r.parent = parent
-	ui := parent.get_ui()
-	r.ui = ui
+	u := parent.get_ui()
+	r.ui = u
 	// Get max value text width
 	if r.width == 0 {
 		r.set_size_from_values()
@@ -117,7 +116,7 @@ fn (mut r Radio) init(parent Layout) {
 	subscriber.subscribe_method(events.on_click, radio_click, r)
 }
 
-[manualfree]
+@[manualfree]
 pub fn (mut r Radio) cleanup() {
 	mut subscriber := r.parent.get_subscriber()
 	subscriber.unsubscribe_method(events.on_key_down, r)
@@ -125,7 +124,7 @@ pub fn (mut r Radio) cleanup() {
 	unsafe { r.free() }
 }
 
-[unsafe]
+@[unsafe]
 pub fn (r &Radio) free() {
 	$if free ? {
 		print('radio ${r.id}')
@@ -209,7 +208,7 @@ fn radio_click(mut r Radio, e &MouseEvent, window &Window) {
 			r.selected_index = r.values.len - 1
 		}
 	}
-	if r.on_click != RadioFn(0) {
+	if r.on_click != unsafe { RadioFn(0) } {
 		r.on_click(r)
 	}
 	// println(r.selected_index)
@@ -308,7 +307,7 @@ fn (mut r Radio) draw_device(mut d DrawDevice) {
 	if r.title != '' {
 		// Border
 		d.draw_rect_empty(r.x, r.y, r.real_width, r.real_height, if r.is_focused {
-			ui.radio_focus_color
+			radio_focus_color
 		} else {
 			gx.gray
 		})

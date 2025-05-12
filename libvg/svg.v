@@ -13,8 +13,9 @@ pub mut:
 	content  &strings.Builder = unsafe { nil }
 }
 
-[params]
+@[params]
 pub struct SvgParams {
+pub:
 	height int
 	width  int
 }
@@ -23,14 +24,14 @@ pub struct SvgParams {
 pub fn svg(p SvgParams) &Svg {
 	mut s := &Svg{
 		height: p.height
-		width: p.width
+		width:  p.width
 	}
 	s.content = &s.buffer
 	return s
 }
 
 // TODO: documentation
-[unsafe]
+@[unsafe]
 pub fn (r &Svg) free() {
 	unsafe {
 		r.buffer.free()
@@ -58,8 +59,9 @@ pub fn (mut s Svg) save(filepath string) ! {
 	os.write_file_array(filepath, *s.content)!
 }
 
-[params]
+@[params]
 pub struct Params {
+pub:
 	stroke      string = 'none'
 	strokewidth int
 	fill        string = 'none'

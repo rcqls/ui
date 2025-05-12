@@ -1,5 +1,5 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
@@ -9,15 +9,13 @@ import gx
 import os
 import clipboard
 
-const (
-	version           = '0.0.4'
-	cursor_show_delay = 100 // ms
-)
+const version = '0.0.4'
+const cursor_show_delay = 100 // ms
 
 pub struct UI {
 pub mut:
-	dd             &DrawDevice = unsafe { nil }
-	gg             &gg.Context       [deprecated: 'use `UI.dd` instead (smart casting to `DrawDeviceContext` if necessary)'] = unsafe { nil }
+	dd             &DrawDevice       = unsafe { nil }
+	gg             &gg.Context       = unsafe { nil }
 	window         &Window           = unsafe { nil }
 	svg            &DrawDeviceSVG    = unsafe { nil }
 	bmp            &DrawDeviceBitmap = unsafe { nil }
@@ -32,6 +30,7 @@ pub mut:
 	keymods      KeyMod
 	styles       map[string]Style
 	style_colors []gx.Color
+	// run_fn       fn () = unsafe { nil }
 mut:
 	cb_image gg.Image
 	// used only in checkbox.v
@@ -64,17 +63,24 @@ pub fn (mut gui UI) refresh() {
 }
 
 fn (mut gui UI) idle_loop() {
+	$if macos {
+		if gui.gg.native_rendering {
+			return
+		}
+	}
 	// This method is called by window.run to ensure
 	// that the window will be redrawn slowly, and that
 	// the cursor will blink at a rate of 1Hz, even if
 	// there are no other user events.
 	for {
-		if time.ticks() - gui.last_type_time < ui.cursor_show_delay {
+		if time.ticks() - gui.last_type_time < cursor_show_delay {
 			// Always show the cursor if the user is typing right now
 			gui.show_cursor = true
 		} else {
 			gui.show_cursor = !gui.show_cursor
 		}
+		gui.refresh()
+		/*
 		if gui.has_cursor {
 			// println('has cursor, refreshing')
 			gui.refresh()
@@ -84,6 +90,7 @@ fn (mut gui UI) idle_loop() {
 				}
 			}
 		}
+		*/
 		gui.ticks = 0
 
 		// glfw.post_empty_event()
@@ -107,6 +114,7 @@ fn (mut gui UI) idle_loop() {
 
 fn (mut gui UI) load_imgs() {
 	// images
+	gui.load_img('arrow', $embed_file('assets/img/arrow.png').to_bytes(), 'assets/img/arrow.png')
 	gui.load_img('arrow_black', $embed_file('assets/img/arrow_black.png').to_bytes(),
 		'assets/img/arrow_black.png')
 	gui.load_img('arrow_white', $embed_file('assets/img/arrow_white.png').to_bytes(),
@@ -139,15 +147,22 @@ fn (mut gui UI) load_imgs() {
 // complete the drawing system
 pub fn (mut gui UI) load_img(id string, b []u8, path string) {
 	if mut gui.dd is DrawDeviceContext {
-		if img := gui.dd.create_image_from_byte_array(b) {
+		if mut img := gui.dd.create_image_from_byte_array(b) {
+			img.path = path
 			gui.imgs[id] = img
-			gui.imgs[id].path = path
 		}
 	}
 }
 
 pub fn (gui &UI) img(id string) gg.Image {
-	return gui.imgs[id]
+	if img := gui.imgs[id] {
+		return img
+	}
+	eprintln('> present gui.imgs.keys(): ')
+	for k in gui.imgs.keys() {
+		eprintln('   k: ${k}')
+	}
+	panic('img with id: `${id}` not found')
 }
 
 pub fn (gui &UI) has_img(id string) bool {
@@ -160,7 +175,7 @@ pub fn (gui &UI) draw_device_img(d DrawDevice, id string, x int, y int, w int, h
 	}
 }
 
-[unsafe]
+@[unsafe]
 pub fn (gui &UI) free() {
 	unsafe {
 		// dd             &DrawDevice = voidptr(0)
@@ -197,6 +212,13 @@ pub fn run(window &Window) {
 		// waiting 2x this time should be enough to ensure the gui.loop
 		// thread will exit before us, without using a waitgroup here too
 		time.sleep(20 * time.millisecond)
+
+		/*
+		if gui.run_fn != unsafe { nil } {
+			gui.run_fn()
+			gui.run_fn = unsafe { nil }
+		}
+		*/
 	}
 }
 

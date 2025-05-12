@@ -1,9 +1,9 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
-[heap]
+@[heap]
 pub struct Rectangle {
 pub mut:
 	id string
@@ -34,9 +34,10 @@ mut:
 	hidden bool
 }
 
-[params]
+@[params]
 pub struct RectangleParams {
 	RectangleStyleParams
+pub:
 	id      string
 	text    string
 	height  int
@@ -58,19 +59,19 @@ pub struct RectangleParams {
 
 pub fn rectangle(c RectangleParams) &Rectangle {
 	mut rect := &Rectangle{
-		id: c.id
-		text: c.text
-		height: c.height
-		width: c.width
-		z_index: c.z_index
-		radius: c.radius
+		id:           c.id
+		text:         c.text
+		height:       c.height
+		width:        c.width
+		z_index:      c.z_index
+		radius:       c.radius
 		style_params: c.RectangleStyleParams
 		// color: c.color
 		border: c.border
 		// border_color: c.border_color
-		ui: 0
-		x: c.x
-		y: c.y
+		ui: unsafe { nil }
+		x:  c.x
+		y:  c.y
 		// text_size: c.text_size
 	}
 	rect.style_params.style = c.theme
@@ -81,7 +82,7 @@ pub fn rectangle(c RectangleParams) &Rectangle {
 pub fn spacing(c RectangleParams) &Rectangle {
 	mut rect := &Rectangle{
 		// color: c.color
-		ui: 0
+		ui: unsafe { nil }
 	}
 	rect.hidden = true
 	return rect
@@ -89,8 +90,8 @@ pub fn spacing(c RectangleParams) &Rectangle {
 
 fn (mut r Rectangle) init(parent Layout) {
 	r.parent = parent
-	ui := parent.get_ui()
-	r.ui = ui
+	u := parent.get_ui()
+	r.ui = u
 	// r.init_style()
 	r.load_style()
 }
@@ -101,12 +102,12 @@ fn (mut r Rectangle) init(parent Layout) {
 // 	dtw.update_text_size(r.text_size)
 // }
 
-[manualfree]
+@[manualfree]
 pub fn (mut r Rectangle) cleanup() {
 	unsafe { r.free() }
 }
 
-[unsafe]
+@[unsafe]
 pub fn (r &Rectangle) free() {
 	$if free ? {
 		print('rectangle ${r.id}')

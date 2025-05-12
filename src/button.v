@@ -1,5 +1,5 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
@@ -8,13 +8,11 @@ import gg
 import os
 import math
 
-const (
-	button_bg_color           = gx.rgb(28, 28, 28)
-	button_border_color       = gx.rgb(200, 200, 200)
-	button_focus_border_color = gx.rgb(50, 50, 50)
-	button_horizontal_padding = 26
-	button_vertical_padding   = 8
-)
+const button_bg_color = gx.rgb(28, 28, 28)
+const button_border_color = gx.rgb(200, 200, 200)
+const button_focus_border_color = gx.rgb(50, 50, 50)
+const button_horizontal_padding = 26
+const button_vertical_padding = 8
 
 enum ButtonState {
 	normal = 1 // synchronized with .button_normal
@@ -22,17 +20,18 @@ enum ButtonState {
 	hovering
 }
 
-type ButtonFn = fn (&Button)
+pub type ButtonFn = fn (&Button)
 
-type ButtonU32Fn = fn (&Button, u32)
+pub type ButtonU32Fn = fn (&Button, u32)
 
-type ButtonMouseFn = fn (&Button, &MouseEvent)
+pub type ButtonMouseFn = fn (&Button, &MouseEvent)
 
-type ButtonMouseMoveFn = fn (&Button, &MouseMoveEvent)
+pub type ButtonMouseMoveFn = fn (&Button, &MouseMoveEvent)
 
-[heap]
+@[heap]
 pub struct Button {
 	// init size read-only
+pub:
 	width_  int
 	height_ int
 pub mut:
@@ -49,15 +48,15 @@ pub mut:
 	text_height int
 	parent      Layout = empty_stack
 	is_focused  bool
-	ui          &UI = unsafe { nil }
-	on_click    ButtonFn
+	ui          &UI      = unsafe { nil }
+	on_click    ButtonFn = unsafe { nil }
 	// TODO: same convention for all callback
-	on_key_down    ButtonU32Fn
-	on_mouse_down  ButtonMouseFn
-	on_mouse_up    ButtonMouseFn
-	on_mouse_move  ButtonMouseMoveFn
-	on_mouse_enter ButtonMouseMoveFn
-	on_mouse_leave ButtonMouseMoveFn
+	on_key_down    ButtonU32Fn       = unsafe { nil }
+	on_mouse_down  ButtonMouseFn     = unsafe { nil }
+	on_mouse_up    ButtonMouseFn     = unsafe { nil }
+	on_mouse_move  ButtonMouseMoveFn = unsafe { nil }
+	on_mouse_enter ButtonMouseMoveFn = unsafe { nil }
+	on_mouse_leave ButtonMouseMoveFn = unsafe { nil }
 	text           string
 	icon_path      string
 	image          gg.Image
@@ -88,19 +87,20 @@ pub mut:
 	component voidptr
 }
 
-[params]
+@[params]
 pub struct ButtonParams {
 	ButtonStyleParams
+pub:
 	id             string
 	text           string
 	icon_path      string
-	on_click       ButtonFn
-	on_key_down    ButtonU32Fn
-	on_mouse_down  ButtonMouseFn
-	on_mouse_up    ButtonMouseFn
-	on_mouse_move  ButtonMouseMoveFn
-	on_mouse_enter ButtonMouseMoveFn
-	on_mouse_leave ButtonMouseMoveFn
+	on_click       ButtonFn          = unsafe { nil }
+	on_key_down    ButtonU32Fn       = unsafe { nil }
+	on_mouse_down  ButtonMouseFn     = unsafe { nil }
+	on_mouse_up    ButtonMouseFn     = unsafe { nil }
+	on_mouse_move  ButtonMouseMoveFn = unsafe { nil }
+	on_mouse_enter ButtonMouseMoveFn = unsafe { nil }
+	on_mouse_leave ButtonMouseMoveFn = unsafe { nil }
 	height         int
 	width          int
 	z_index        int
@@ -115,28 +115,28 @@ pub struct ButtonParams {
 
 pub fn button(c ButtonParams) &Button {
 	mut b := &Button{
-		id: c.id
-		width_: c.width
-		height_: c.height
-		z_index: c.z_index
-		movable: c.movable
-		hoverable: c.hoverable
-		text: c.text
-		icon_path: c.icon_path
-		use_icon: c.icon_path != ''
-		tooltip: TooltipMessage{c.tooltip, c.tooltip_side}
-		style_params: c.ButtonStyleParams
-		on_click: c.on_click
-		on_key_down: c.on_key_down
-		on_mouse_down: c.on_mouse_down
-		on_mouse_up: c.on_mouse_up
-		on_mouse_move: c.on_mouse_move
+		id:             c.id
+		width_:         c.width
+		height_:        c.height
+		z_index:        c.z_index
+		movable:        c.movable
+		hoverable:      c.hoverable
+		text:           c.text
+		icon_path:      c.icon_path
+		use_icon:       c.icon_path != ''
+		tooltip:        TooltipMessage{c.tooltip, c.tooltip_side}
+		style_params:   c.ButtonStyleParams
+		on_click:       c.on_click
+		on_key_down:    c.on_key_down
+		on_mouse_down:  c.on_mouse_down
+		on_mouse_up:    c.on_mouse_up
+		on_mouse_move:  c.on_mouse_move
 		on_mouse_enter: c.on_mouse_enter
 		on_mouse_leave: c.on_mouse_leave
 		// text_size: c.text_size
 		// radius: f32(c.radius)
 		padding: f32(c.padding)
-		ui: 0
+		ui:      unsafe { nil }
 	}
 	b.style_params.style = c.theme
 	if b.use_icon && !os.exists(c.icon_path) {
@@ -148,8 +148,8 @@ pub fn button(c ButtonParams) &Button {
 
 fn (mut b Button) init(parent Layout) {
 	b.parent = parent
-	ui := parent.get_ui()
-	b.ui = ui
+	u := parent.get_ui()
+	b.ui = u
 	if b.use_icon {
 		if mut b.ui.dd is DrawDeviceContext {
 			if img := b.ui.dd.create_image(b.icon_path) {
@@ -160,7 +160,7 @@ fn (mut b Button) init(parent Layout) {
 	b.load_style()
 	b.set_text_size()
 	if b.tooltip.text != '' {
-		mut win := ui.window
+		mut win := u.window
 		win.tooltip.append(b, b.tooltip)
 	}
 	mut subscriber := parent.get_subscriber()
@@ -174,7 +174,7 @@ fn (mut b Button) init(parent Layout) {
 	b.ui.window.evt_mngr.add_receiver(b, [events.on_mouse_down, events.on_mouse_move])
 }
 
-[manualfree]
+@[manualfree]
 fn (mut b Button) cleanup() {
 	mut subscriber := b.parent.get_subscriber()
 	subscriber.unsubscribe_method(events.on_key_down, b)
@@ -186,7 +186,7 @@ fn (mut b Button) cleanup() {
 	unsafe { b.free() }
 }
 
-[unsafe]
+@[unsafe]
 pub fn (b &Button) free() {
 	$if free ? {
 		print('button ${b.id}')
@@ -221,13 +221,13 @@ fn btn_key_down(mut b Button, e &KeyEvent, window &Window) {
 	if !b.is_focused {
 		return
 	}
-	if b.on_key_down != ButtonU32Fn(0) {
+	if b.on_key_down != unsafe { ButtonU32Fn(0) } {
 		b.on_key_down(b, e.codepoint)
 	} else {
 		// default behavior like click for space and enter
 		if e.key in [.enter, .space] {
 			// println("btn key as a click")
-			if b.on_click != ButtonFn(0) {
+			if b.on_click != unsafe { ButtonFn(0) } {
 				b.on_click(b)
 			}
 		}
@@ -261,7 +261,7 @@ fn btn_click(mut b Button, e &MouseEvent, window &Window) {
 			b.state = .pressed
 		} else if e.action == .up {
 			b.state = .normal
-			if b.on_click != ButtonFn(0) && b.is_focused {
+			if b.on_click != unsafe { ButtonFn(0) } && b.is_focused {
 				$if btn_onclick ? {
 					println('onclick ${b.id}')
 				}
@@ -290,7 +290,7 @@ fn btn_mouse_down(mut b Button, e &MouseEvent, window &Window) {
 		if !b.just_dragged {
 			b.state = .pressed
 		}
-		if b.on_mouse_down != ButtonMouseFn(0) {
+		if b.on_mouse_down != unsafe { ButtonMouseFn(0) } {
 			b.on_mouse_down(b, e)
 		}
 	}
@@ -304,7 +304,7 @@ fn btn_mouse_up(mut b Button, e &MouseEvent, window &Window) {
 		return
 	}
 	b.state = .normal
-	if b.on_mouse_up != ButtonMouseFn(0) {
+	if b.on_mouse_up != unsafe { ButtonMouseFn(0) } {
 		b.on_mouse_up(b, e)
 	}
 }
@@ -326,20 +326,20 @@ fn btn_mouse_move(mut b Button, e &MouseMoveEvent, window &Window) {
 		}
 	} else {
 		// to use button as a splitter (no test point_inside)
-		if b.on_mouse_move != ButtonMouseMoveFn(0) {
+		if b.on_mouse_move != unsafe { ButtonMouseMoveFn(0) } {
 			b.on_mouse_move(b, e)
 		}
 	}
 }
 
 pub fn (mut b Button) mouse_enter(e &MouseMoveEvent) {
-	if b.on_mouse_enter != ButtonMouseMoveFn(0) {
+	if b.on_mouse_enter != unsafe { ButtonMouseMoveFn(0) } {
 		b.on_mouse_enter(b, e)
 	}
 }
 
 pub fn (mut b Button) mouse_leave(e &MouseMoveEvent) {
-	if b.on_mouse_leave != ButtonMouseMoveFn(0) {
+	if b.on_mouse_leave != unsafe { ButtonMouseMoveFn(0) } {
 		b.on_mouse_leave(b, e)
 	}
 }
@@ -411,7 +411,7 @@ fn (mut b Button) draw_device(mut d DrawDevice) {
 		// println("draw $b.id ${bg_color}")
 		d.draw_rounded_rect_filled(x, y, width, height, radius, bg_color) // gx.white)
 		d.draw_rounded_rect_empty(x, y, width, height, radius, if b.is_focused {
-			ui.button_focus_border_color
+			button_focus_border_color
 		} else {
 			b.style.border_color
 		})
@@ -430,7 +430,7 @@ fn (mut b Button) draw_device(mut d DrawDevice) {
 		}
 		d.draw_rect_filled(x, y, width, height, bg_color) // gx.white)
 		d.draw_rect_empty(x, y, width, height, if b.is_focused {
-			ui.button_focus_border_color
+			button_focus_border_color
 		} else {
 			b.style.border_color
 		})
@@ -474,11 +474,11 @@ pub fn (mut b Button) set_text_size() {
 
 		// b.text_width = int(f32(b.text_width))
 		// b.text_height = int(f32(b.text_height))
-		b.width = b.text_width + ui.button_horizontal_padding
+		b.width = b.text_width + button_horizontal_padding
 		if b.width_ > b.width {
 			b.width = b.width_
 		}
-		b.height = b.text_height + ui.button_vertical_padding
+		b.height = b.text_height + button_vertical_padding
 		if b.height_ > b.height {
 			b.height = b.height_
 		}

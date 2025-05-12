@@ -3,25 +3,26 @@ module component
 import ui
 import gx
 
-[heap]
+@[heap]
 pub struct HideableComponent {
 pub mut:
 	id              string
-	layout          &ui.Stack
+	layout          &ui.Stack = unsafe { nil }
 	child_layout_id string
-	window          &ui.Window = &ui.Window(0)
+	window          &ui.Window = &ui.Window(unsafe { nil })
 	z_index         map[string]int
 	children        map[string]ui.Widget
 	shortcut        string
 	open            bool
 }
 
-[params]
+@[params]
 pub struct HideableParams {
+pub:
 	id       string
 	bg_color gx.Color
-	layout   &ui.Stack
-	hidden   bool = true
+	layout   &ui.Stack = unsafe { nil }
+	hidden   bool      = true
 	shortcut string
 	open     bool = true
 }
@@ -29,18 +30,18 @@ pub struct HideableParams {
 // TODO: documentation
 pub fn hideable_stack(p HideableParams) &ui.Stack {
 	mut layout := ui.row(
-		widths: ui.stretch
-		heights: ui.stretch
-		id: ui.component_id(p.id, 'layout')
+		widths:   ui.stretch
+		heights:  ui.stretch
+		id:       ui.component_id(p.id, 'layout')
 		children: [p.layout]
 	)
 
 	mut h := &HideableComponent{
-		id: p.id
-		layout: layout
+		id:              p.id
+		layout:          layout
 		child_layout_id: p.layout.id
-		shortcut: p.shortcut
-		open: p.open
+		shortcut:        p.shortcut
+		open:            p.open
 	}
 
 	h.save_children_depth(layout.children)

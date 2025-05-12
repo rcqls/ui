@@ -2,15 +2,15 @@ import ui
 
 fn main() {
 	window := ui.window(
-		mode: .resizable
+		mode:   .resizable
 		height: 240
 		layout: ui.row(
-			widths: ui.stretch
+			widths:   ui.stretch
 			children: [
 				ui.listbox(
-					id: 'lb'
-					draw_lines: true
-					files_droped: true
+					id:            'lb'
+					draw_lines:    true
+					files_dropped: true
 				),
 			]
 		)

@@ -1,21 +1,21 @@
 module ui
 
 import gx
+import math { max }
 
 // ScrollView exists only when attached to Widget
 // Is it not a widget but attached to a widget.
 // A ScrollableWidget would have a field scrollview
 
-pub const (
-	scrollbar_size                 = 10
-	scroolbar_thumb_color          = gx.rgb(87, 153, 245)
-	scrollbar_background_color     = gx.rgb(219, 219, 219)
-	scrollbar_button_color         = gx.rgb(150, 150, 150)
-	scrollbar_focused_button_color = gx.rgb(100, 100, 100)
-	scrollview_delta_key           = 5
-	// scrollview_delta_mouse         = 10
-	null_scrollview                = &ScrollView(0)
-)
+pub const scrollbar_size = 10
+pub const scrollbar_thumb_size = 16
+pub const scroolbar_thumb_color = gx.rgb(87, 153, 245)
+pub const scrollbar_background_color = gx.rgb(219, 219, 219)
+pub const scrollbar_button_color = gx.rgb(150, 150, 150)
+pub const scrollbar_focused_button_color = gx.rgb(100, 100, 100)
+pub const scrollview_delta_key = 5
+// scrollview_delta_mouse         = 10
+pub const null_scrollview = &ScrollView(unsafe { nil })
 
 enum ScrollViewEvent {
 	all
@@ -49,15 +49,15 @@ pub enum ScrollViewPart {
 
 type ScrollViewChangedFn = fn (sw ScrollableWidget)
 
-interface ScrollableWidget {
+pub interface ScrollableWidget {
 	ClippingWidget
 mut:
-	has_scrollview bool
-	scrollview &ScrollView
-	id string
-	ui &UI
-	offset_x int
-	offset_y int
+	has_scrollview   bool
+	scrollview       &ScrollView
+	id               string
+	ui               &UI
+	offset_x         int
+	offset_y         int
 	on_scroll_change ScrollViewChangedFn
 	adj_size() (int, int)
 	size() (int, int)
@@ -69,7 +69,7 @@ pub fn get_scrollview(sw ScrollableWidget) (bool, &ScrollView) {
 	return has, if has {
 		sw.scrollview
 	} else {
-		&ScrollView(0)
+		&ScrollView(unsafe { nil })
 	}
 }
 
@@ -100,7 +100,7 @@ pub fn scrollview_add[T](mut w T) {
 	mut sv := &ScrollView{
 		parent: w.parent
 		widget: unsafe { w }
-		ui: 0
+		ui:     unsafe { nil }
 	}
 	// IMPORTANT (sort of bug):
 	// declaring `widget: w` inside struct before work for stack but not for canvas_layout
@@ -117,27 +117,21 @@ pub fn scrollview_add[T](mut w T) {
 // TODO: documentation
 pub fn scrollview_widget_set_orig_xy(w Widget, reset_offset bool) {
 	if w is Stack {
-		if has_scrollview(w) {
-			scrollview_set_orig_xy(w, reset_offset)
-		}
+		scrollview_set_orig_xy(w, reset_offset)
 		for child in w.children {
 			scrollview_widget_set_orig_xy(child, reset_offset)
 		}
 	} else if w is CanvasLayout {
-		if has_scrollview(w) {
-			scrollview_set_orig_xy(w, reset_offset)
-		}
+		scrollview_set_orig_xy(w, reset_offset)
 		for child in w.children {
 			scrollview_widget_set_orig_xy(child, reset_offset)
 		}
 	} else if w is ListBox {
-		if has_scrollview(w) {
-			scrollview_set_orig_xy(w, reset_offset)
-		}
+		scrollview_set_orig_xy(w, reset_offset)
+	} else if w is ChunkView {
+		scrollview_set_orig_xy(w, reset_offset)
 	} else if w is TextBox {
-		if has_scrollview(w) {
-			scrollview_set_orig_xy(w, reset_offset)
-		}
+		scrollview_set_orig_xy(w, reset_offset)
 	} else if w is Group {
 		// if has_scrollview(w) {
 		// 	scrollview_set_orig_xy(w)
@@ -146,9 +140,7 @@ pub fn scrollview_widget_set_orig_xy(w Widget, reset_offset bool) {
 			scrollview_widget_set_orig_xy(child, reset_offset)
 		}
 	} else if w is BoxLayout {
-		if has_scrollview(w) {
-			scrollview_set_orig_xy(w, reset_offset)
-		}
+		scrollview_set_orig_xy(w, reset_offset)
 		for child in w.children {
 			scrollview_widget_set_orig_xy(child, reset_offset)
 		}
@@ -203,7 +195,7 @@ fn has_parent_scrolling(w Widget) bool {
 }
 
 // TODO: documentation
-pub fn scrollview_set_orig_xy[T](w &T, reset_offset bool) {
+pub fn scrollview_set_orig_xy(w &ScrollableWidget, reset_offset bool) {
 	if has_scrollview(w) {
 		mut sv := w.scrollview
 		// rest values
@@ -230,32 +222,24 @@ pub fn scrollview_set_orig_xy[T](w &T, reset_offset bool) {
 // TODO: documentation
 pub fn scrollview_widget_save_offset(w Widget) {
 	if w is Stack {
-		if has_scrollview(w) {
-			scrollview_save_offset(w)
-		}
+		scrollview_save_offset(w)
 		for child in w.children {
 			scrollview_widget_save_offset(child)
 		}
 	} else if w is CanvasLayout {
-		if has_scrollview(w) {
-			scrollview_save_offset(w)
-		}
+		scrollview_save_offset(w)
 		for child in w.children {
 			scrollview_widget_save_offset(child)
 		}
 	} else if w is ListBox {
-		if has_scrollview(w) {
-			scrollview_save_offset(w)
-		}
+		scrollview_save_offset(w)
 	} else if w is TextBox {
-		if has_scrollview(w) {
-			scrollview_save_offset(w)
-		}
+		scrollview_save_offset(w)
 	}
 }
 
 // TODO: documentation
-pub fn scrollview_save_offset[T](w &T) {
+pub fn scrollview_save_offset(w &ScrollableWidget) {
 	if has_scrollview(w) {
 		mut sv := w.scrollview
 		// Save prev values
@@ -267,32 +251,24 @@ pub fn scrollview_save_offset[T](w &T) {
 // TODO: documentation
 pub fn scrollview_widget_restore_offset(w Widget, orig bool) {
 	if w is Stack {
-		if has_scrollview(w) {
-			scrollview_restore_offset(w, orig)
-		}
+		scrollview_restore_offset(w, orig)
 		for child in w.children {
 			scrollview_widget_restore_offset(child, orig)
 		}
 	} else if w is CanvasLayout {
-		if has_scrollview(w) {
-			scrollview_restore_offset(w, orig)
-		}
+		scrollview_restore_offset(w, orig)
 		for child in w.children {
 			scrollview_widget_restore_offset(child, orig)
 		}
 	} else if w is ListBox {
-		if has_scrollview(w) {
-			scrollview_restore_offset(w, orig)
-		}
+		scrollview_restore_offset(w, orig)
 	} else if w is TextBox {
-		if has_scrollview(w) {
-			scrollview_restore_offset(w, orig)
-		}
+		scrollview_restore_offset(w, orig)
 	}
 }
 
 // TODO: documentation
-pub fn scrollview_restore_offset[T](w &T, orig bool) {
+pub fn scrollview_restore_offset(w &ScrollableWidget, orig bool) {
 	if has_scrollview(w) {
 		mut sv := w.scrollview
 		sv.update_active()
@@ -316,17 +292,17 @@ pub fn scrollview_restore_offset[T](w &T, orig bool) {
 }
 
 // TODO: documentation
-pub fn scrollview_delegate_parent_scrollview[T](mut w T) {
+pub fn scrollview_delegate_parent_scrollview(mut w Widget) {
 	parent := w.parent
-	if parent is Stack {
+	if parent is Stack && mut w is ScrollableWidget {
 		w.scrollview = parent.scrollview
-	} else if parent is CanvasLayout {
+	} else if parent is CanvasLayout && mut w is ScrollableWidget {
 		w.scrollview = parent.scrollview
 	}
 }
 
 // TODO: documentation
-pub fn scrollview_update[T](w &T) {
+pub fn scrollview_update(w &ScrollableWidget) {
 	if has_scrollview(w) {
 		mut sv := w.scrollview
 		sv.update()
@@ -336,9 +312,7 @@ pub fn scrollview_update[T](w &T) {
 // TODO: documentation
 pub fn scrollview_widget_update(w Widget) {
 	if w is Stack {
-		if has_scrollview(w) {
-			scrollview_update(w)
-		}
+		scrollview_update(w)
 		for child in w.children {
 			scrollview_widget_update(child)
 		}
@@ -346,7 +320,7 @@ pub fn scrollview_widget_update(w Widget) {
 }
 
 // TODO: documentation
-pub fn scrollview_update_active[T](w &T) {
+pub fn scrollview_update_active(w &ScrollableWidget) {
 	if has_scrollview(w) {
 		mut sv := w.scrollview
 		sv.update_active()
@@ -356,9 +330,7 @@ pub fn scrollview_update_active[T](w &T) {
 // TODO: documentation
 pub fn scrollview_widget_update_active(w Widget) {
 	if w is Stack {
-		if has_scrollview(w) {
-			scrollview_update_active(w)
-		}
+		scrollview_update_active(w)
 		for child in w.children {
 			scrollview_widget_update_active(child)
 		}
@@ -387,7 +359,7 @@ pub fn scrollview_draw_begin[T](mut w T, d DrawDevice) {
 }
 
 // TODO: documentation
-pub fn scrollview_draw_end[T](w &T, d DrawDevice) {
+pub fn scrollview_draw_end(w &ScrollableWidget, d DrawDevice) {
 	if has_scrollview(w) {
 		sv := w.scrollview
 		sv.draw_device(d)
@@ -421,13 +393,13 @@ pub fn unlock_scrollview_key(w ScrollableWidget) {
 	sv.key_locked = false
 }
 
-[heap]
+@[heap]
 pub struct ScrollView {
 pub mut:
 	widget &Widget = unsafe { nil }
 	// color
-	btn_color_x gx.Color = ui.scrollbar_button_color
-	btn_color_y gx.Color = ui.scrollbar_button_color
+	btn_color_x gx.Color = scrollbar_button_color
+	btn_color_y gx.Color = scrollbar_button_color
 	// horizontal scrollbar
 	sb_w  int
 	btn_x int
@@ -471,8 +443,8 @@ pub mut:
 
 fn (mut sv ScrollView) init(parent Layout) {
 	mut widget := sv.widget
-	ui := widget.ui // get_ui()
-	sv.ui = ui
+	u := widget.ui // get_ui()
+	sv.ui = u
 	sv.parent = parent
 
 	mut subscriber := parent.get_subscriber()
@@ -490,7 +462,7 @@ fn (mut sv ScrollView) init(parent Layout) {
 }
 
 // TODO: documentation
-[manualfree]
+@[manualfree]
 pub fn (mut sv ScrollView) cleanup() {
 	mut subscriber := sv.parent.get_subscriber()
 	subscriber.unsubscribe_method(events.on_click, sv)
@@ -508,7 +480,7 @@ pub fn (mut sv ScrollView) cleanup() {
 }
 
 // TODO: documentation
-[unsafe]
+@[unsafe]
 pub fn (sv &ScrollView) free() {
 	unsafe { free(sv) }
 }
@@ -560,18 +532,18 @@ fn (mut sv ScrollView) update() {
 	}
 
 	if sv.active_x {
-		sv.sb_w = sv.width - ui.scrollbar_size
+		sv.sb_w = sv.width - scrollbar_size
 		sv.btn_w = if sv.width < sv.adj_width {
-			int(f32(sv.width) / f32(sv.adj_width) * f32(sv.sb_w))
+			max(int(f32(sv.width) / f32(sv.adj_width) * f32(sv.sb_w)), scrollbar_thumb_size)
 		} else {
 			sv.sb_w
 		}
 	}
 	if sv.active_y {
-		sv.sb_h = sv.height - ui.scrollbar_size
+		sv.sb_h = sv.height - scrollbar_size
 		sv.btn_h = if sv.height < sv.adj_height {
 			// println("update: sv.sb_h=$sv.sb_h sv.btn_h = int(${f32(sv.height)} / ${f32(sv.adj_height)} * ${f32(sv.sb_h)} = $sv.btn_h")
-			int(f64(sv.height) / f64(sv.adj_height) * f64(sv.sb_h))
+			max(int(f64(sv.height) / f64(sv.adj_height) * f64(sv.sb_h)), scrollbar_thumb_size)
 		} else {
 			sv.sb_h
 		}
@@ -629,24 +601,24 @@ fn (sv &ScrollView) point_inside(x f64, y f64, mode ScrollViewPart) bool {
 			x_max, y_max = x_min + sv.width, y_min + sv.height
 		}
 		.bar_x {
-			x_min, y_min = svx, svy + sv.height - ui.scrollbar_size
-			x_max, y_max = x_min + sv.sb_w, y_min + ui.scrollbar_size
+			x_min, y_min = svx, svy + sv.height - scrollbar_size
+			x_max, y_max = x_min + sv.sb_w, y_min + scrollbar_size
 		}
 		.bar_y {
-			x_min, y_min = svx + sv.width - ui.scrollbar_size, svy
-			x_max, y_max = x_min + ui.scrollbar_size, y_min + sv.sb_h
+			x_min, y_min = svx + sv.width - scrollbar_size, svy
+			x_max, y_max = x_min + scrollbar_size, y_min + sv.sb_h
 		}
 		.btn_x {
 			// thanks to draw_rounded_rect_filled() the width of the button is
 			// at least 2 * ui.scrollbar_size / 3 even if sv.btn_w is 0
-			x_min, y_min = svx + sv.btn_x - ui.scrollbar_size / 3, svy + sv.height - ui.scrollbar_size
-			x_max, y_max = x_min + sv.btn_w + 2 * ui.scrollbar_size / 3, y_min + ui.scrollbar_size
+			x_min, y_min = svx + sv.btn_x - scrollbar_size / 3, svy + sv.height - scrollbar_size
+			x_max, y_max = x_min + sv.btn_w + 2 * scrollbar_size / 3, y_min + scrollbar_size
 		}
 		.btn_y {
 			// thanks to draw_rounded_rect_filled() the height of the button is
 			// at least 2 * ui.scrollbar_size / 3 even if sv.btn_h is 0
-			x_min, y_min = svx + sv.width - ui.scrollbar_size, svy + sv.btn_y - ui.scrollbar_size / 3
-			x_max, y_max = x_min + ui.scrollbar_size, y_min + sv.btn_h + 2 * ui.scrollbar_size / 3
+			x_min, y_min = svx + sv.width - scrollbar_size, svy + sv.btn_y - scrollbar_size / 3
+			x_max, y_max = x_min + scrollbar_size, y_min + sv.btn_h + 2 * scrollbar_size / 3
 		}
 		.bar {
 			return sv.point_inside(x, y, .bar_x) || sv.point_inside(x, y, .bar_y)
@@ -687,7 +659,7 @@ fn (mut sv ScrollView) change_value(mode ScrollViewPart) {
 		}
 	}
 	// User defined treatment for scrollable widget
-	if sw.on_scroll_change != ScrollViewChangedFn(0) {
+	if sw.on_scroll_change != unsafe { ScrollViewChangedFn(0) } {
 		sw.on_scroll_change(sw)
 	}
 }
@@ -698,22 +670,22 @@ pub fn (sv &ScrollView) draw_device(d DrawDevice) {
 
 	if sv.active_x {
 		// horizontal scrollbar
-		d.draw_rounded_rect_filled(svx, svy + sv.height - ui.scrollbar_size, sv.sb_w,
-			ui.scrollbar_size, ui.scrollbar_size / 3, ui.scrollbar_background_color)
+		d.draw_rounded_rect_filled(svx, svy + sv.height - scrollbar_size, sv.sb_w, scrollbar_size,
+			scrollbar_size / 3, scrollbar_background_color)
 		// horizontal button
-		d.draw_rounded_rect_filled(svx + sv.btn_x, svy + sv.height - ui.scrollbar_size,
-			sv.btn_w, ui.scrollbar_size, ui.scrollbar_size / 3, sv.btn_color_x)
+		d.draw_rounded_rect_filled(svx + sv.btn_x, svy + sv.height - scrollbar_size, sv.btn_w,
+			scrollbar_size, scrollbar_size / 3, sv.btn_color_x)
 	}
 	if sv.active_y {
 		$if sv_draw ? {
-			println('sv_draw ${sv.widget.id} -> ${svx} + ${sv.width} - ${ui.scrollbar_size}, ${svy}, ${ui.scrollbar_size}, ${sv.sb_h}')
+			println('sv_draw ${sv.widget.id} -> ${svx} + ${sv.width} - ${scrollbar_size}, ${svy}, ${scrollbar_size}, ${sv.sb_h}')
 		}
 		// vertical scrollbar
-		d.draw_rounded_rect_filled(svx + sv.width - ui.scrollbar_size, svy, ui.scrollbar_size,
-			sv.sb_h, ui.scrollbar_size / 3, ui.scrollbar_background_color)
+		d.draw_rounded_rect_filled(svx + sv.width - scrollbar_size, svy, scrollbar_size,
+			sv.sb_h, scrollbar_size / 3, scrollbar_background_color)
 		// vertical button
-		d.draw_rounded_rect_filled(svx + sv.width - ui.scrollbar_size, svy + sv.btn_y,
-			ui.scrollbar_size, sv.btn_h, ui.scrollbar_size / 3, sv.btn_color_y)
+		d.draw_rounded_rect_filled(svx + sv.width - scrollbar_size, svy + sv.btn_y, scrollbar_size,
+			sv.btn_h, scrollbar_size / 3, sv.btn_color_y)
 	}
 }
 
@@ -840,14 +812,14 @@ fn scrollview_mouse_move(mut sv ScrollView, e &MouseMoveEvent, _ voidptr) {
 		return
 	}
 	sv.btn_color_x = if sv.point_inside(e.x, e.y, .btn_x) {
-		ui.scrollbar_focused_button_color
+		scrollbar_focused_button_color
 	} else {
-		ui.scrollbar_button_color
+		scrollbar_button_color
 	}
 	sv.btn_color_y = if sv.point_inside(e.x, e.y, .btn_y) {
-		ui.scrollbar_focused_button_color
+		scrollbar_focused_button_color
 	} else {
-		ui.scrollbar_button_color
+		scrollbar_button_color
 	}
 	if !sv.ui.btn_down[0] {
 		sv.dragging = 0 // invalid neither x nor y
@@ -872,25 +844,25 @@ fn scrollview_key_down(mut sv ScrollView, e &KeyEvent, _ voidptr) {
 	match e.key {
 		.up {
 			if sv.active_y {
-				sv.offset_y -= ui.scrollview_delta_key
+				sv.offset_y -= scrollview_delta_key
 				sv.change_value(.btn_y)
 			}
 		}
 		.down {
 			if sv.active_y {
-				sv.offset_y += ui.scrollview_delta_key
+				sv.offset_y += scrollview_delta_key
 				sv.change_value(.btn_y)
 			}
 		}
 		.left {
 			if sv.active_x {
-				sv.offset_x -= ui.scrollview_delta_key
+				sv.offset_x -= scrollview_delta_key
 				sv.change_value(.btn_x)
 			}
 		}
 		.right {
 			if sv.active_x {
-				sv.offset_x += ui.scrollview_delta_key
+				sv.offset_x += scrollview_delta_key
 				sv.change_value(.btn_x)
 			}
 		}
@@ -903,12 +875,12 @@ fn scrollview_key_down(mut sv ScrollView, e &KeyEvent, _ voidptr) {
 // you the smaller, fractional number of pixels in the scrollbar which is the
 // scrollbar button offset)
 fn (sv &ScrollView) x_offset_max_and_coef() (int, f32) {
-	max_offset_x := sv.adj_width - sv.width + 2 * ui.scrollbar_size
+	max_offset_x := sv.adj_width - sv.width + 2 * scrollbar_size
 	return max_offset_x, f32(sv.sb_w - sv.btn_w) / f32(max_offset_x)
 }
 
 fn (sv &ScrollView) y_offset_max_and_coef() (int, f32) {
-	max_offset_y := (sv.adj_height - sv.height + 2 * ui.scrollbar_size)
+	max_offset_y := (sv.adj_height - sv.height + 2 * scrollbar_size)
 	// println("y_offset_max_and_coef: max_offset_y := ( (adj_h =$sv.adj_height) - (h=$sv.height) + 2 * (size=$ui.scrollbar_size))")
 	return max_offset_y, f32(sv.sb_h - sv.btn_h) / f32(max_offset_y)
 }

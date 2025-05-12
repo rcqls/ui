@@ -3,10 +3,10 @@ module ui
 import time
 import gg
 
-interface Draggable {
+pub interface Draggable {
 	id string
-	x int
-	y int
+	x  int
+	y  int
 	size() (int, int)
 	get_window() &Window
 	drag_type() string
@@ -14,7 +14,7 @@ interface Draggable {
 mut:
 	offset_x int
 	offset_y int
-	z_index int
+	z_index  int
 	draw()
 }
 
@@ -54,7 +54,7 @@ struct Dragger {
 pub mut:
 	typ       string
 	activated bool
-	widget    Draggable = button()
+	widget    &Draggable = button()
 	start_x   f64
 	start_y   f64
 	pos_x     f64
@@ -69,7 +69,7 @@ NB: would like external mechanism only depending on point_inside methods of Widg
 shift key (or other) to activate possible dragging
 */
 
-fn drag_register(d Draggable, e &MouseEvent) bool {
+fn drag_register(d &Draggable, e &MouseEvent) bool {
 	if shift_key(e.mods) {
 		$if drag ? {
 			println('drag ${typeof(w).name}')
@@ -77,7 +77,7 @@ fn drag_register(d Draggable, e &MouseEvent) bool {
 		mut window := d.get_window()
 		if window.dragger.activated {
 			if d.z_index > window.dragger.widget.z_index {
-				window.dragger.widget = d
+				window.dragger.widget = unsafe { d }
 				window.dragger.start_x = e.x - d.offset_x
 				window.dragger.start_y = e.y - d.offset_y
 				// println('drag: ($e.x, $e.y, ${window.dragger.start_x},${window.dragger.start_y})')
@@ -88,7 +88,7 @@ fn drag_register(d Draggable, e &MouseEvent) bool {
 		} else {
 			window.dragger.activated = true
 			window.mouse.start('blue')
-			window.dragger.widget = d
+			window.dragger.widget = unsafe { d }
 			window.dragger.start_x = e.x - d.offset_x
 			window.dragger.start_y = e.y - d.offset_y
 			// println('drag: ($e.x, $e.y, ${window.dragger.start_x},${window.dragger.start_y})')
@@ -152,13 +152,13 @@ fn drag_child_dropped(mut window Window) {
 
 // DropZone
 
-interface DropZone {
+pub interface DropZone {
 	ui &UI
 	id string
 	size() (int, int)
 mut:
-	x int
-	y int
+	x          int
+	y          int
 	drop_types []string
 }
 

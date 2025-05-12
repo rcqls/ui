@@ -1,5 +1,5 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
@@ -8,7 +8,7 @@ import gg
 
 type PictureFn = fn (&Picture)
 
-[heap]
+@[heap]
 pub struct Picture {
 pub mut:
 	id       string
@@ -30,22 +30,23 @@ mut:
 	path      string
 	ui        &UI = unsafe { nil }
 	image     gg.Image
-	on_click  PictureFn
+	on_click  PictureFn = unsafe { nil }
 	use_cache bool
 	tooltip   TooltipMessage
 }
 
-[params]
+@[params]
 pub struct PictureParams {
+pub:
 	id           string
 	path         string
 	width        int
 	height       int
 	z_index      int
 	movable      bool
-	on_click     PictureFn
-	use_cache    bool     = true
-	ref          &Picture = unsafe { nil }
+	on_click     PictureFn = unsafe { nil }
+	use_cache    bool      = true
+	ref          &Picture  = unsafe { nil }
 	image        gg.Image
 	tooltip      string
 	tooltip_side Side = .top
@@ -56,25 +57,25 @@ pub fn picture(c PictureParams) &Picture {
 	// eprintln('V UI: Picture.width/height is 0, it will not be displayed')
 	// }
 	mut pic := &Picture{
-		id: c.id
-		width: c.width
-		height: c.height
-		z_index: c.z_index
-		movable: c.movable
-		path: c.path
+		id:        c.id
+		width:     c.width
+		height:    c.height
+		z_index:   c.z_index
+		movable:   c.movable
+		path:      c.path
 		use_cache: c.use_cache
-		on_click: c.on_click
-		image: c.image
-		tooltip: TooltipMessage{c.tooltip, c.tooltip_side}
-		ui: 0
+		on_click:  c.on_click
+		image:     c.image
+		tooltip:   TooltipMessage{c.tooltip, c.tooltip_side}
+		ui:        unsafe { nil }
 	}
 	return pic
 }
 
 fn (mut pic Picture) init(parent Layout) {
 	pic.parent = parent
-	mut ui := parent.get_ui()
-	pic.ui = ui
+	mut u := parent.get_ui()
+	pic.ui = u
 	mut subscriber := parent.get_subscriber()
 	subscriber.subscribe_method(events.on_click, pic_click, pic)
 	subscriber.subscribe_method(events.on_mouse_down, pic_mouse_down, pic)
@@ -82,30 +83,30 @@ fn (mut pic Picture) init(parent Layout) {
 	/*
 	if pic.image.width > 0 {
 		// .image was set by the user, skip path  TODO
-		ui.resource_cache[pic.path] = pic.image
+		u.resource_cache[pic.path] = pic.image
 		return
 	}
 	*/
-	if ui.has_img(pic.path) {
-		pic.image = ui.img(pic.path)
+	if u.has_img(pic.path) {
+		pic.image = u.img(pic.path)
 	} else {
 		if !os.exists(pic.path) {
 			eprintln('V UI: picture file "${pic.path}" not found')
 		}
-		if !pic.use_cache && pic.path in ui.resource_cache {
-			pic.image = ui.resource_cache[pic.path]
+		if pic.use_cache && pic.path in u.resource_cache {
+			pic.image = unsafe { u.resource_cache[pic.path] }
 		} else if mut pic.ui.dd is DrawDeviceContext {
-			dd := pic.ui.dd
+			mut dd := pic.ui.dd
 			if img := dd.create_image(pic.path) {
 				pic.image = img
-				ui.resource_cache[pic.path] = pic.image
+				u.resource_cache[pic.path] = pic.image
 			}
 		}
 	}
 	$if android {
 		byte_ary := os.read_apk_asset(pic.path) or { panic(err) }
 		if mut pic.ui.dd is DrawDeviceContext {
-			pic.image = pic.ui.gg.create_image_from_byte_array(byte_ary)
+			pic.image = pic.ui.gg.create_image_from_byte_array(byte_ary) or { panic(err) }
 		}
 	}
 	// If the user didn't set width or height, use the image's dimensions, otherwise it won't be displayed
@@ -114,12 +115,12 @@ fn (mut pic Picture) init(parent Layout) {
 		pic.height = pic.image.height
 	}
 	if pic.tooltip.text != '' {
-		mut win := ui.window
+		mut win := u.window
 		win.tooltip.append(pic, pic.tooltip)
 	}
 }
 
-[manualfree]
+@[manualfree]
 pub fn (mut p Picture) cleanup() {
 	mut subscriber := p.parent.get_subscriber()
 	subscriber.unsubscribe_method(events.on_click, p)
@@ -128,7 +129,7 @@ pub fn (mut p Picture) cleanup() {
 	unsafe { p.free() }
 }
 
-[unsafe]
+@[unsafe]
 pub fn (p &Picture) free() {
 	$if free ? {
 		print('picture ${p.id}')
@@ -148,7 +149,7 @@ fn pic_click(mut pic Picture, e &MouseEvent, window &Window) {
 	}
 	if pic.point_inside(e.x, e.y) {
 		if int(e.action) == 0 {
-			if pic.on_click != PictureFn(0) {
+			if pic.on_click != unsafe { PictureFn(0) } {
 				pic.on_click(pic)
 			}
 		}
@@ -213,4 +214,8 @@ fn (pic &Picture) drag_type() string {
 
 fn (pic &Picture) drag_bounds() gg.Rect {
 	return gg.Rect{pic.x + pic.offset_x, pic.y + pic.offset_y, pic.width, pic.height}
+}
+
+pub fn (mut pic Picture) remove_from_cache(path string) {
+	pic.ui.resource_cache.delete(path)
 }

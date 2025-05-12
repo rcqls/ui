@@ -9,9 +9,10 @@ pub enum WMMode {
 	tiling
 }
 
-[heap]
+@[heap]
 pub struct WindowManager {
-pub mut: // inside an unique sokol Window
+pub mut:
+	// inside an unique sokol Window
 	window  &Window = unsafe { nil }
 	apps    []Application
 	layout  &BoxLayout = unsafe { nil }
@@ -19,9 +20,10 @@ pub mut: // inside an unique sokol Window
 	kind    WMMode
 }
 
-[params]
+@[params]
 pub struct WindowManagerParams {
 	WindowParams
+pub:
 	scrollview bool
 	kind       WMMode
 	apps       map[string]Application
@@ -48,7 +50,7 @@ pub fn wm(cfg WindowManagerParams) &WindowManager {
 			subw.as_top_subwindow()
 		}
 		for mut app in wm.apps {
-			if app.on_init != WindowFn(0) {
+			if app.on_init != unsafe { WindowFn(0) } {
 				app.on_init(win)
 			}
 		}

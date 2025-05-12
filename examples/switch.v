@@ -1,11 +1,9 @@
 import ui
 
-const (
-	win_width  = 250
-	win_height = 250
-)
+const win_width = 250
+const win_height = 250
 
-[heap]
+@[heap]
 struct App {
 mut:
 	label    &ui.Label
@@ -19,17 +17,17 @@ fn main() {
 	}
 	app.switcher = ui.switcher(open: true, on_click: app.on_switch_click)
 	app.window = ui.window(
-		width: win_width
-		height: win_height
-		title: 'Switch'
-		mode: .resizable
+		width:    win_width
+		height:   win_height
+		title:    'Switch'
+		mode:     .resizable
 		children: [
 			ui.row(
 				alignment: .top
-				spacing: 5
-				margin: ui.Margin{5, 5, 5, 5}
-				widths: ui.stretch
-				children: [
+				spacing:   5
+				margin:    ui.Margin{5, 5, 5, 5}
+				widths:    ui.stretch
+				children:  [
 					app.label,
 					app.switcher,
 				]

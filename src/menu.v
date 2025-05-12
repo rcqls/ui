@@ -1,21 +1,19 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
 import gx
 
-const (
-	menu_height         = 30
-	menu_width          = 150
-	menu_padding        = 10
-	menu_bar_color      = gx.rgb(230, 230, 230)
-	menu_bg_color       = gx.rgb(240, 240, 240)
-	menu_bg_color_hover = gx.rgb(220, 220, 220)
-	menu_border_color   = gx.rgb(123, 123, 123)
-)
+const menu_height = 30
+const menu_width = 150
+const menu_padding = 10
+const menu_bar_color = gx.rgb(230, 230, 230)
+const menu_bg_color = gx.rgb(240, 240, 240)
+const menu_bg_color_hover = gx.rgb(220, 220, 220)
+const menu_border_color = gx.rgb(123, 123, 123)
 
-[heap]
+@[heap]
 pub struct Menu {
 pub mut:
 	id       string
@@ -53,12 +51,13 @@ mut:
 	orientation Orientation = Orientation.vertical
 }
 
-[params]
+@[params]
 pub struct MenuParams {
 	MenuStyleParams
+pub:
 	id          string
-	width       int = ui.menu_width
-	height      int = ui.menu_height
+	width       int = menu_width
+	height      int = menu_height
 	fixed_width bool
 	z_index     int = 1000
 	// text_size f64
@@ -70,18 +69,18 @@ pub struct MenuParams {
 
 pub fn menu(c MenuParams) &Menu {
 	mut m := &Menu{
-		id: c.id
-		text: c.text
-		items: c.items
-		width: c.width
-		height: c.height
-		item_width: c.width
-		item_height: c.height
-		fixed_width: c.fixed_width
-		ui: 0
-		z_index: c.z_index
+		id:           c.id
+		text:         c.text
+		items:        c.items
+		width:        c.width
+		height:       c.height
+		item_width:   c.width
+		item_height:  c.height
+		fixed_width:  c.fixed_width
+		ui:           unsafe { nil }
+		z_index:      c.z_index
 		style_params: c.MenuStyleParams
-		hidden: c.hidden
+		hidden:       c.hidden
 	}
 	m.root_menu = m
 	m.style_params.style = c.theme
@@ -120,8 +119,8 @@ fn (mut m Menu) build(mut win Window) {
 
 fn (mut m Menu) init(parent Layout) {
 	m.parent = parent
-	ui := parent.get_ui()
-	m.ui = ui
+	u := parent.get_ui()
+	m.ui = u
 	m.update_size()
 	if m.is_root_menu() {
 		m.propagate_connection()
@@ -133,7 +132,7 @@ fn (mut m Menu) init(parent Layout) {
 	m.ui.window.evt_mngr.add_receiver(m, [events.on_mouse_down])
 }
 
-[manualfree]
+@[manualfree]
 pub fn (mut m Menu) cleanup() {
 	mut subscriber := m.parent.get_subscriber()
 	subscriber.unsubscribe_method(events.on_click, m)
@@ -141,7 +140,7 @@ pub fn (mut m Menu) cleanup() {
 	unsafe { m.free() }
 }
 
-[unsafe]
+@[unsafe]
 pub fn (m &Menu) free() {
 	$if free ? {
 		print('menu ${m.id}')
@@ -203,7 +202,7 @@ fn menu_click(mut m Menu, e &MouseEvent, window &Window) {
 		if selected >= 0 && selected != m.selected {
 			m.close()
 		}
-		if item.action != MenuItemFn(0) {
+		if item.action != unsafe { MenuItemFn(0) } {
 			item.action(item)
 		}
 		if item.has_menu() {
@@ -278,7 +277,7 @@ fn (mut m Menu) update_size() {
 			mut dtw := DrawTextWidget(m)
 			dtw.load_style()
 			for mut item in m.items {
-				item.width = dtw.text_width(item.text) + ui.menu_padding * 2
+				item.width = dtw.text_width(item.text) + menu_padding * 2
 				if item.width > mw {
 					mw = item.width
 				}
@@ -297,7 +296,7 @@ fn (mut m Menu) update_size() {
 			mut dtw := DrawTextWidget(m)
 			dtw.load_style()
 			for mut item in m.items {
-				item.width = dtw.text_width(item.text) + ui.menu_padding * 2
+				item.width = dtw.text_width(item.text) + menu_padding * 2
 				w = w + item.width
 			}
 			m.width = w
@@ -352,8 +351,8 @@ fn (mut m Menu) draw_device(mut d DrawDevice) {
 					m.root_menu.style.bg_color_hover)
 			}
 
-			dtw.draw_device_text(d, m.x + i * m.dx * m.item_width + ui.menu_padding, m.y +
-				i * m.dy * m.item_height + ui.menu_padding, item.text)
+			dtw.draw_device_text(d, m.x + i * m.dx * m.item_width + menu_padding, m.y +
+				i * m.dy * m.item_height + menu_padding, item.text)
 		}
 	} else { // compact menu
 		if m.orientation == .vertical {
@@ -376,8 +375,8 @@ fn (mut m Menu) draw_device(mut d DrawDevice) {
 					// println("item $i <$m.id> $m.x, $m.y, $item.width, $m.dx")
 				}
 
-				dtw.draw_device_text(d, m.x + ui.menu_padding, m.y + i * m.dy * m.item_height +
-					ui.menu_padding, item.text)
+				dtw.draw_device_text(d, m.x + menu_padding, m.y + i * m.dy * m.item_height +
+					menu_padding, item.text)
 			}
 		} else { // horizontal
 			mut mw := 0 // find submenu max width
@@ -404,8 +403,8 @@ fn (mut m Menu) draw_device(mut d DrawDevice) {
 					// println("item $i <$m.id> $m.x, $m.y, $w, $item.width, $m.dx")
 				}
 
-				dtw.draw_device_text(d, m.x + i * m.dx + w + ui.menu_padding, m.y +
-					i * m.dy * m.item_height + ui.menu_padding, item.text)
+				dtw.draw_device_text(d, m.x + i * m.dx + w + menu_padding, m.y +
+					i * m.dy * m.item_height + menu_padding, item.text)
 
 				w = w + item.width
 			}
@@ -417,6 +416,11 @@ fn (mut m Menu) draw_device(mut d DrawDevice) {
 
 pub fn (mut m Menu) add_item(p MenuItemParams) {
 	m.items << menuitem(p)
+	m.update_size()
+}
+
+pub fn (mut m Menu) get_items_count() int {
+	return m.items.len
 }
 
 pub fn (mut m Menu) set_visible(state bool) {
@@ -480,7 +484,7 @@ pub fn (m &Menu) show_all_states() {
 
 pub type MenuItemFn = fn (item &MenuItem)
 
-[heap]
+@[heap]
 pub struct MenuItem {
 pub mut:
 	id          string
@@ -491,24 +495,25 @@ pub mut:
 	parent_item &MenuItem = unsafe { nil }
 	width       int
 mut:
-	action MenuItemFn
+	action MenuItemFn = unsafe { nil }
 }
 
-[params]
+@[params]
 pub struct MenuItemParams {
+pub:
 	id      string
 	text    string
 	submenu &Menu      = unsafe { nil }
-	action  MenuItemFn = MenuItemFn(0)
+	action  MenuItemFn = unsafe { MenuItemFn(0) }
 }
 
 pub fn menuitem(p MenuItemParams) &MenuItem {
 	mi := &MenuItem{
-		text: p.text
-		id: p.id
-		action: p.action
+		text:    p.text
+		id:      p.id
+		action:  p.action
 		submenu: p.submenu
-		width: 0
+		width:   0
 	}
 	return mi
 }

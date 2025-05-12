@@ -1,5 +1,5 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
@@ -10,7 +10,7 @@ pub interface Layout {
 	get_ui() &UI
 	size() (int, int)
 	get_children() []Widget
-	get_subscriber() &eventbus.Subscriber
+	get_subscriber() &eventbus.Subscriber[string]
 mut:
 	resize(w int, h int)
 	update_layout()

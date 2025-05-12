@@ -1,21 +1,19 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
 import gx
 import math
 
-const (
-	check_mark_size = 14
-	cb_border_color = gx.rgb(50, 50, 50) // gx.rgb(76, 145, 244)
-)
+const check_mark_size = 14
+const cb_border_color = gx.rgb(50, 50, 50) // gx.rgb(76, 145, 244)
 
 // type CheckChangedFn = fn (voidptr, bool)
 
 type CheckBoxFn = fn (&CheckBox)
 
-[heap]
+@[heap]
 pub struct CheckBox {
 pub mut:
 	id               string
@@ -31,9 +29,9 @@ pub mut:
 	parent           Layout = empty_stack
 	is_focused       bool
 	checked          bool
-	ui               &UI = unsafe { nil }
-	on_click         CheckBoxFn
-	on_check_changed CheckBoxFn
+	ui               &UI        = unsafe { nil }
+	on_click         CheckBoxFn = unsafe { nil }
+	on_check_changed CheckBoxFn = unsafe { nil }
 	text             string
 	// Adjustable
 	justify  []f64
@@ -53,16 +51,17 @@ pub mut:
 	component voidptr
 }
 
-[params]
+@[params]
 pub struct CheckBoxParams {
 	CheckBoxStyleParams
+pub:
 	id               string
 	x                int
 	y                int
 	z_index          int
 	text             string
-	on_click         CheckBoxFn
-	on_check_changed CheckBoxFn
+	on_click         CheckBoxFn = unsafe { nil }
+	on_check_changed CheckBoxFn = unsafe { nil }
 	checked          bool
 	disabled         bool
 	justify          []f64  = [0.0, 0.0]
@@ -71,17 +70,17 @@ pub struct CheckBoxParams {
 
 pub fn checkbox(c CheckBoxParams) &CheckBox {
 	mut cb := &CheckBox{
-		id: c.id
-		height: ui.check_mark_size + 5 // TODO
-		z_index: c.z_index
-		ui: 0
-		text: c.text
-		on_click: c.on_click
+		id:               c.id
+		height:           check_mark_size + 5 // TODO
+		z_index:          c.z_index
+		ui:               unsafe { nil }
+		text:             c.text
+		on_click:         c.on_click
 		on_check_changed: c.on_check_changed
-		checked: c.checked
-		disabled: c.disabled
-		style_params: c.CheckBoxStyleParams
-		justify: c.justify
+		checked:          c.checked
+		disabled:         c.disabled
+		style_params:     c.CheckBoxStyleParams
+		justify:          c.justify
 	}
 	cb.style_params.style = c.theme
 	return cb
@@ -92,7 +91,7 @@ pub fn (mut cb CheckBox) init(parent Layout) {
 	cb.ui = parent.get_ui()
 	mut dtw := DrawTextWidget(cb)
 	dtw.load_style()
-	cb.width = dtw.text_width(cb.text) + 5 + ui.check_mark_size
+	cb.width = dtw.text_width(cb.text) + 5 + check_mark_size
 	cb.load_style()
 	// cb.init_style()
 	mut subscriber := parent.get_subscriber()
@@ -100,7 +99,7 @@ pub fn (mut cb CheckBox) init(parent Layout) {
 	subscriber.subscribe_method(events.on_click, cb_click, cb)
 }
 
-[manualfree]
+@[manualfree]
 pub fn (mut cb CheckBox) cleanup() {
 	mut subscriber := cb.parent.get_subscriber()
 	subscriber.unsubscribe_method(events.on_key_down, cb)
@@ -108,7 +107,7 @@ pub fn (mut cb CheckBox) cleanup() {
 	unsafe { cb.free() }
 }
 
-[unsafe]
+@[unsafe]
 pub fn (cb &CheckBox) free() {
 	$if free ? {
 		print('checkbox ${cb.id}')
@@ -141,10 +140,10 @@ fn cb_key_down(mut cb CheckBox, e &KeyEvent, window &Window) {
 	if e.key in [.enter, .space] {
 		cb.checked = !cb.checked
 		// println("checked: $cb.checked")
-		if cb.on_check_changed != CheckBoxFn(0) {
+		if cb.on_check_changed != unsafe { CheckBoxFn(0) } {
 			cb.on_check_changed(cb)
 		}
-		if cb.on_click != CheckBoxFn(0) {
+		if cb.on_click != unsafe { CheckBoxFn(0) } {
 			cb.on_click(cb)
 		}
 	}
@@ -157,10 +156,10 @@ fn cb_click(mut cb CheckBox, e &MouseEvent, window &Window) {
 	if cb.point_inside(e.x, e.y) { // && e.action == 0 {
 		cb.checked = !cb.checked
 		// println("checked: $cb.checked")
-		if cb.on_check_changed != CheckBoxFn(0) {
+		if cb.on_check_changed != unsafe { CheckBoxFn(0) } {
 			cb.on_check_changed(cb)
 		}
-		if cb.on_click != CheckBoxFn(0) {
+		if cb.on_click != unsafe { CheckBoxFn(0) } {
 			cb.on_click(cb)
 		}
 	}
@@ -177,7 +176,7 @@ pub fn (mut cb CheckBox) adj_size() (int, int) {
 		dtw.load_style()
 		mut w, mut h := 0, 0
 		w, h = dtw.text_size(cb.text)
-		cb.adj_width, cb.adj_height = w + ui.check_mark_size, math.max(h, ui.check_mark_size)
+		cb.adj_width, cb.adj_height = w + check_mark_size, math.max(h, check_mark_size)
 	}
 	return cb.adj_width, cb.adj_height
 }
@@ -211,12 +210,11 @@ pub fn (mut cb CheckBox) draw_device(mut d DrawDevice) {
 	d.draw_rect_filled(adj_pos_x - (cb.width - cb.adj_width) / 2, adj_pos_y - (cb.height - cb.adj_height) / 2,
 		cb.width, cb.height, cb.parent.bg_color()) // cb.ui.window.bg_color) // cb.style.bg_color)
 	// }
-	d.draw_rect_filled(adj_pos_x, adj_pos_y, ui.check_mark_size, ui.check_mark_size, cb.style.bg_color) // progress_bar_color)
-	draw_device_inner_border(false, d, adj_pos_x, adj_pos_y, ui.check_mark_size, ui.check_mark_size,
+	d.draw_rect_filled(adj_pos_x, adj_pos_y, check_mark_size, check_mark_size, cb.style.bg_color) // progress_bar_color)
+	draw_device_inner_border(false, d, adj_pos_x, adj_pos_y, check_mark_size, check_mark_size,
 		false)
 	if cb.is_focused {
-		d.draw_rect_empty(adj_pos_x, adj_pos_y, ui.check_mark_size, ui.check_mark_size,
-			cb.style.border_color)
+		d.draw_rect_empty(adj_pos_x, adj_pos_y, check_mark_size, check_mark_size, cb.style.border_color)
 	}
 	// Draw X (TODO draw a check mark instead)
 	if cb.checked {
@@ -236,7 +234,7 @@ pub fn (mut cb CheckBox) draw_device(mut d DrawDevice) {
 	// Text
 	mut dtw := DrawTextWidget(cb)
 	dtw.draw_device_load_style(d)
-	dtw.draw_device_text(d, adj_pos_x + ui.check_mark_size + 5, adj_pos_y, cb.text)
+	dtw.draw_device_text(d, adj_pos_x + check_mark_size + 5, adj_pos_y, cb.text)
 	$if bb ? {
 		debug_draw_bb_widget(mut cb, cb.ui)
 	}

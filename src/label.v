@@ -1,9 +1,9 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
-[heap]
+@[heap]
 pub struct Label {
 pub mut:
 	id         string
@@ -36,9 +36,10 @@ pub mut:
 	component voidptr
 }
 
-[params]
+@[params]
 pub struct LabelParams {
 	LabelStyleParams
+pub:
 	id       string
 	width    int
 	height   int
@@ -52,15 +53,15 @@ pub struct LabelParams {
 
 pub fn label(c LabelParams) &Label {
 	mut lbl := &Label{
-		id: c.id
-		text: c.text
-		width: c.width
-		height: c.height
-		ui: 0
-		z_index: c.z_index
+		id:       c.id
+		text:     c.text
+		width:    c.width
+		height:   c.height
+		ui:       unsafe { nil }
+		z_index:  c.z_index
 		clipping: c.clipping
 		// text_size: c.text_size
-		justify: c.justify
+		justify:      c.justify
 		style_params: c.LabelStyleParams
 	}
 	lbl.style_params.style = c.theme
@@ -68,19 +69,19 @@ pub fn label(c LabelParams) &Label {
 }
 
 fn (mut l Label) init(parent Layout) {
-	ui := parent.get_ui()
-	l.ui = ui
+	u := parent.get_ui()
+	l.ui = u
 	l.load_style()
 	// l.init_style()
 	l.init_size()
 }
 
-[manualfree]
+@[manualfree]
 pub fn (mut l Label) cleanup() {
 	unsafe { l.free() }
 }
 
-[unsafe]
+@[unsafe]
 pub fn (l &Label) free() {
 	$if free ? {
 		print('label ${l.id}')

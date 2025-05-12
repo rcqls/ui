@@ -25,18 +25,20 @@ struct HSVColor {
 	v f64
 }
 
-[heap]
+@[heap]
 pub struct ColorBoxComponent {
 mut:
 	simg       C.sg_image
+	sampler    C.sg_sampler
+	buf        &u8 = unsafe { 0 }
 	h          f64 = 0.0
 	s          f64 = 0.75
 	v          f64 = 0.75
 	rgb        gx.Color
-	linked     &gx.Color = &gx.Color(0)
+	linked     &gx.Color             = &gx.Color(unsafe { nil })
 	colbtn     &ColorButtonComponent = unsafe { nil }
 	ind_sel    int
-	hsv_sel    []HSVColor = []HSVColor{len: component.cb_nc * component.cb_nr}
+	hsv_sel    []HSVColor = []HSVColor{len: cb_nc * cb_nr}
 	txt_r      string
 	txt_g      string
 	txt_b      string
@@ -47,21 +49,22 @@ mut:
 	hsl   bool // use hsl instead of hsv
 	drag  bool // drag mode for canvas on h
 pub mut:
-	layout     &ui.Stack // required
-	cv_h       &ui.CanvasLayout
-	cv_sv      &ui.CanvasLayout
-	r_rgb_cur  &ui.Rectangle
-	cv_hsv_sel &ui.CanvasLayout
-	tb_r       &ui.TextBox
-	tb_g       &ui.TextBox
-	tb_b       &ui.TextBox
-	lb_r       &ui.Label
-	lb_g       &ui.Label
-	lb_b       &ui.Label
+	layout     &ui.Stack        = unsafe { nil } // required
+	cv_h       &ui.CanvasLayout = unsafe { nil }
+	cv_sv      &ui.CanvasLayout = unsafe { nil }
+	r_rgb_cur  &ui.Rectangle    = unsafe { nil }
+	cv_hsv_sel &ui.CanvasLayout = unsafe { nil }
+	tb_r       &ui.TextBox      = unsafe { nil }
+	tb_g       &ui.TextBox      = unsafe { nil }
+	tb_b       &ui.TextBox      = unsafe { nil }
+	lb_r       &ui.Label        = unsafe { nil }
+	lb_g       &ui.Label        = unsafe { nil }
+	lb_b       &ui.Label        = unsafe { nil }
 }
 
-[params]
+@[params]
 pub struct ColorBoxParams {
+pub:
 	id    string
 	light bool
 	hsl   bool
@@ -71,30 +74,30 @@ pub struct ColorBoxParams {
 // TODO: documentation
 pub fn colorbox_stack(c ColorBoxParams) &ui.Stack {
 	mut cv_h := ui.canvas_plus(
-		id: ui.component_id(c.id, 'h')
-		width: 30
-		height: 256
-		on_draw: cv_h_draw
+		id:       ui.component_id(c.id, 'h')
+		width:    30
+		height:   256
+		on_draw:  cv_h_draw
 		on_click: cv_h_click
 		// on_mouse_move: cv_h_mouse_move
 	)
 	mut cv_sv := ui.canvas_plus(
-		id: ui.component_id(c.id, 'sv')
-		width: 256
-		height: 256
-		on_draw: cv_sv_draw
+		id:            ui.component_id(c.id, 'sv')
+		width:         256
+		height:        256
+		on_draw:       cv_sv_draw
 		on_mouse_move: cv_sv_mouse_move
-		on_click: cv_sv_click
+		on_click:      cv_sv_click
 	)
 	mut r_rgb_cur := ui.rectangle(
 		radius: 5
 	)
 	mut cv_hsv_sel := ui.canvas_plus(
-		id: ui.component_id(c.id, 'hsv_sel')
-		bg_radius: 5
-		bg_color: gx.rgb(220, 220, 220)
-		on_draw: cv_sel_draw
-		on_click: cv_sel_click
+		id:          ui.component_id(c.id, 'hsv_sel')
+		bg_radius:   5
+		bg_color:    gx.rgb(220, 220, 220)
+		on_draw:     cv_sel_draw
+		on_click:    cv_sel_click
 		on_key_down: cv_sel_key_down
 	)
 	mut tb_r := ui.textbox(id: ui.component_id(c.id, 'tb_r'), is_numeric: true, on_char: tb_char)
@@ -104,52 +107,51 @@ pub fn colorbox_stack(c ColorBoxParams) &ui.Stack {
 	lb_g := ui.label(text: 'G:')
 	lb_b := ui.label(text: 'B:')
 	mut layout := ui.row(
-		id: ui.component_id(c.id, 'layout')
-		width: 30 + 256 + 4 * 10 + component.cb_cv_hsv_w
-		height: 256 + 2 * 10
-		widths: [30.0, 256.0, ui.compact]
-		heights: [256.0, 256.0, ui.compact]
-		spacing: 10.0
-		margin_: 10
+		id:       ui.component_id(c.id, 'layout')
+		width:    30 + 256 + 4 * 10 + cb_cv_hsv_w
+		height:   256 + 2 * 10
+		widths:   [30.0, 256.0, ui.compact]
+		heights:  [256.0, 256.0, ui.compact]
+		spacing:  10.0
+		margin_:  10
 		children: [
 			cv_h,
 			cv_sv,
 			ui.column(
-				heights: [f64(component.cb_cv_hsv_h), component.cb_cv_hsv_w, ui.compact, ui.compact,
-					ui.compact]
-				widths: f64(component.cb_cv_hsv_w)
-				spacing: 5.0
+				heights:  [f64(cb_cv_hsv_h), cb_cv_hsv_w, ui.compact, ui.compact, ui.compact]
+				widths:   f64(cb_cv_hsv_w)
+				spacing:  5.0
 				children: [cv_hsv_sel, r_rgb_cur,
 					ui.row(
-						widths: [20.0, ui.stretch]
+						widths:   [20.0, ui.stretch]
 						children: [lb_r, tb_r]
 					),
 					ui.row(
-						widths: [20.0, ui.stretch]
+						widths:   [20.0, ui.stretch]
 						children: [lb_g, tb_g]
 					),
 					ui.row(
-						widths: [20.0, ui.stretch]
+						widths:   [20.0, ui.stretch]
 						children: [lb_b, tb_b]
 					)]
 			),
 		]
 	)
 	mut cb := &ColorBoxComponent{
-		layout: layout
-		cv_h: cv_h
-		cv_sv: cv_sv
-		r_rgb_cur: r_rgb_cur
+		layout:     layout
+		cv_h:       cv_h
+		cv_sv:      cv_sv
+		r_rgb_cur:  r_rgb_cur
 		cv_hsv_sel: cv_hsv_sel
-		tb_r: tb_r
-		tb_g: tb_g
-		tb_b: tb_b
-		lb_r: lb_r
-		lb_g: lb_g
-		lb_b: lb_b
-		light: c.light
-		hsl: c.hsl
-		drag: c.drag
+		tb_r:       tb_r
+		tb_g:       tb_g
+		tb_b:       tb_b
+		lb_r:       lb_r
+		lb_g:       lb_g
+		lb_b:       lb_b
+		light:      c.light
+		hsl:        c.hsl
+		drag:       c.drag
 	}
 
 	ui.component_connect(cb, layout, cv_h, cv_sv, r_rgb_cur, cv_hsv_sel, tb_r, tb_g, tb_b)
@@ -179,11 +181,13 @@ fn colorbox_init(layout &ui.Stack) {
 	cb.update_hsl()
 	cb.update_cur_color(true)
 	// init all hsv colors
-	for i in 0 .. (component.cb_nc * component.cb_nr) {
-		cb.hsv_sel[i] = HSVColor{f64(i) / (component.cb_nc * component.cb_nr), .75, .75}
+	for i in 0 .. (cb_nc * cb_nr) {
+		cb.hsv_sel[i] = HSVColor{f64(i) / (cb_nc * cb_nr), .75, .75}
 	}
 	cb.update_theme()
 	cb.simg = ui.create_dynamic_texture(256, 256)
+	cb.sampler = ui.create_image_sampler()
+	cb.buf = unsafe { malloc(4 * 256 * 256) }
 	cb.update_buffer()
 }
 
@@ -248,7 +252,7 @@ fn cv_sv_draw(mut d ui.DrawDevice, mut c ui.CanvasLayout) {
 	mut cb := colorbox_component(c)
 
 	// TODO: check extra_draw c.draw_device_texture
-	c.draw_texture(cb.simg)
+	c.draw_texture(cb.simg, cb.sampler)
 
 	c.draw_device_rounded_rect_filled(d, int(cb.s * 256.0) - 10, int((1.0 - cb.v) * 256.0) - 10,
 		20, 20, 10, cb.hsv_to_rgb(cb.h, 1 - cb.s, 1.0 - cb.v))
@@ -275,9 +279,9 @@ fn cv_sel_key_down(c &ui.CanvasLayout, e ui.KeyEvent) {
 
 fn cv_sel_click(c &ui.CanvasLayout, e ui.MouseEvent) {
 	mut cb := colorbox_component(c)
-	i := (e.x - component.cb_sp) / (component.cb_sp + component.cb_hsv_col)
-	j := (e.y - component.cb_sp) / (component.cb_sp + component.cb_hsv_col)
-	cb.ind_sel = i + j * component.cb_nc
+	i := (e.x - cb_sp) / (cb_sp + cb_hsv_col)
+	j := (e.y - cb_sp) / (cb_sp + cb_hsv_col)
+	cb.ind_sel = i + j * cb_nc
 	// println("($i, $j) -> ${cb.ind_sel}")
 	hsv := cb.hsv_sel[cb.ind_sel]
 	cb.h, cb.s, cb.v = hsv.h, hsv.s, hsv.v
@@ -289,17 +293,16 @@ fn cv_sel_draw(mut d ui.DrawDevice, mut c ui.CanvasLayout) {
 	cb := colorbox_component(c)
 	mut hsv := HSVColor{}
 	mut h, mut s, mut v := 0.0, 0.0, 0.0
-	ii, jj := cb.ind_sel % component.cb_nc, cb.ind_sel / component.cb_nc
-	c.draw_device_rounded_rect_filled(d, component.cb_sp + ii * (component.cb_hsv_col +
-		component.cb_sp) - 1, component.cb_sp + jj * (component.cb_hsv_col + component.cb_sp) - 1,
-		component.cb_hsv_col + 2, component.cb_hsv_col + 2, .25, gx.black)
-	for j in 0 .. component.cb_nr {
-		for i in 0 .. component.cb_nc {
-			hsv = cb.hsv_sel[i + j * component.cb_nc]
+	ii, jj := cb.ind_sel % cb_nc, cb.ind_sel / cb_nc
+	c.draw_device_rounded_rect_filled(d, cb_sp + ii * (cb_hsv_col + cb_sp) - 1, cb_sp +
+		jj * (cb_hsv_col + cb_sp) - 1, cb_hsv_col + 2, cb_hsv_col + 2, .25, gx.black)
+	for j in 0 .. cb_nr {
+		for i in 0 .. cb_nc {
+			hsv = cb.hsv_sel[i + j * cb_nc]
 			h, s, v = hsv.h, hsv.s, hsv.v
-			c.draw_device_rounded_rect_filled(d, component.cb_sp + i * (component.cb_hsv_col +
-				component.cb_sp), component.cb_sp + j * (component.cb_hsv_col + component.cb_sp),
-				component.cb_hsv_col, component.cb_hsv_col, .25, cb.hsv_to_rgb(h, s, v))
+			c.draw_device_rounded_rect_filled(d, cb_sp + i * (cb_hsv_col + cb_sp), cb_sp +
+				j * (cb_hsv_col + cb_sp), cb_hsv_col, cb_hsv_col, .25, cb.hsv_to_rgb(h,
+				s, v))
 		}
 	}
 }
@@ -315,9 +318,10 @@ pub fn (mut cb ColorBoxComponent) update_cur_color(reactive bool) {
 	}
 	$if cb_ucc ? {
 		id := if cb.colbtn != 0 { cb.colbtn.widget.id } else { 'id_none' }
-		println('update cur color ${id} ${cb.colbtn != 0 && cb.colbtn.on_changed != ColorButtonFn(0)}')
+		println('update cur color ${id} ${cb.colbtn != 0
+			&& cb.colbtn.on_changed != unsafe { ColorButtonFn(0) }}')
 	}
-	if unsafe { cb.colbtn != 0 } && cb.colbtn.on_changed != ColorButtonFn(0) {
+	if unsafe { cb.colbtn != 0 } && cb.colbtn.on_changed != unsafe { ColorButtonFn(0) } {
 		cb.colbtn.on_changed(cb.colbtn)
 	}
 	if reactive {
@@ -335,9 +339,7 @@ pub fn (mut cb ColorBoxComponent) update_sel_color() {
 
 // TODO: documentation
 pub fn (mut cb ColorBoxComponent) update_buffer() {
-	unsafe { ui.destroy_texture(cb.simg) }
-	sz := 256 * 256 * 4
-	buf := unsafe { malloc(sz) }
+	buf := unsafe { cb.buf }
 	mut col := gx.Color{}
 	mut i := 0
 	for y in 0 .. 256 {
@@ -352,11 +354,7 @@ pub fn (mut cb ColorBoxComponent) update_buffer() {
 			}
 		}
 	}
-	unsafe {
-		cb.simg = ui.create_texture(256, 256, buf)
-		// update_text_texture(cb.simg, 256, 256, buf)
-		free(buf)
-	}
+	ui.update_text_texture(cb.simg, 256, 256, cb.buf)
 }
 
 fn tb_char(tb &ui.TextBox, cp u32) {

@@ -1,5 +1,5 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 
 /*
@@ -50,6 +50,7 @@ void vui_deminimize_window(void* window) {
 }
 
 void vui_focus_window(void* window) {
+	[NSApp activateIgnoringOtherApps:YES];
   [(__bridge NSWindow*)(window) makeKeyAndOrderFront:nil];
 }
 

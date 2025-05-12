@@ -10,7 +10,7 @@ pub type Actions = map[string]Action
 
 pub struct Action {
 pub mut:
-	action_fn ActionFn
+	action_fn ActionFn = unsafe { nil }
 	context   voidptr
 }
 
@@ -23,15 +23,14 @@ mut:
 // TODO: documentation
 pub fn (mut s Actionable) add_action(action string, context voidptr, action_fn ActionFn) {
 	s.actions[action] = Action{
-		context: context
+		context:   context
 		action_fn: action_fn
 	}
 }
 
 // TODO: documentation
 pub fn (s &Actionable) run_action(action string) {
-	if action in s.actions {
-		action_ := s.actions[action]
-		action_.action_fn(action_.context)
+	if a := s.actions[action] {
+		a.action_fn(a.context)
 	}
 }

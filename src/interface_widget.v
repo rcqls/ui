@@ -1,5 +1,5 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
@@ -8,15 +8,15 @@ import gx
 
 pub interface Widget {
 mut:
-	ui &UI
-	id string
-	x int
-	y int
-	z_index int
+	ui       &UI
+	id       string
+	x        int
+	y        int
+	z_index  int
 	offset_x int
 	offset_y int
-	hidden bool
-	parent Layout
+	hidden   bool
+	parent   Layout
 	init(Layout)
 	set_pos(x int, y int)
 	propose_size(w int, h int) (int, int)

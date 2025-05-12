@@ -17,15 +17,15 @@ pub struct CheckBoxStyle {
 pub mut:
 	text_font_name      string = 'system'
 	text_color          gx.Color
-	text_size           int = 16
+	text_size           int                 = 16
 	text_align          TextHorizontalAlign = .left
 	text_vertical_align TextVerticalAlign   = .top
 }
 
-[params]
+@[params]
 pub struct CheckBoxStyleParams {
 	WidgetTextStyleParams
-mut:
+pub mut:
 	style        string   = no_style
 	border_color gx.Color = no_color
 	bg_color     gx.Color = no_color

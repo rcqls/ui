@@ -1,5 +1,5 @@
 // Copyright (c) 2020-2022 Alexander Medvednikov. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
@@ -23,7 +23,7 @@ pub type CanvasLayoutBoundingFn = fn (c &CanvasLayout, bb gg.Rect)
 
 pub type CanvasLayoutDelegateFn = fn (c &CanvasLayout, e &gg.Event)
 
-[heap]
+@[heap]
 pub struct CanvasLayout {
 pub mut:
 	id               string
@@ -61,28 +61,28 @@ pub mut:
 	component         voidptr
 	active_evt_mngr   bool
 	delegate_evt_mngr bool
-	on_build          BuildFn
-	on_init           InitFn
+	on_build          BuildFn = unsafe { nil }
+	on_init           InitFn  = unsafe { nil }
 	// scrollview
 	has_scrollview bool
 	scrollview     &ScrollView = unsafe { nil }
 	// callbacks
-	draw_device_fn      CanvasLayoutDrawDeviceFn = CanvasLayoutDrawDeviceFn(0)
-	post_draw_device_fn CanvasLayoutDrawDeviceFn = CanvasLayoutDrawDeviceFn(0)
-	click_fn            CanvasLayoutMouseFn      = CanvasLayoutMouseFn(0)
-	mouse_down_fn       CanvasLayoutMouseFn      = CanvasLayoutMouseFn(0)
-	mouse_up_fn         CanvasLayoutMouseFn      = CanvasLayoutMouseFn(0)
-	scroll_fn           CanvasLayoutScrollFn     = CanvasLayoutScrollFn(0)
-	mouse_move_fn       CanvasLayoutMouseMoveFn  = CanvasLayoutMouseMoveFn(0)
-	mouse_enter_fn      CanvasLayoutMouseMoveFn  = CanvasLayoutMouseMoveFn(0)
-	mouse_leave_fn      CanvasLayoutMouseMoveFn  = CanvasLayoutMouseMoveFn(0)
-	key_down_fn         CanvasLayoutKeyFn        = CanvasLayoutKeyFn(0)
-	char_fn             CanvasLayoutKeyFn        = CanvasLayoutKeyFn(0)
-	full_size_fn        CanvasLayoutSizeFn       = CanvasLayoutSizeFn(0)
-	bounding_change_fn  CanvasLayoutBoundingFn   = CanvasLayoutBoundingFn(0)
-	on_scroll_change    ScrollViewChangedFn      = ScrollViewChangedFn(0)
-	on_delegate         CanvasLayoutDelegateFn
-	parent              Layout = empty_stack
+	draw_device_fn      CanvasLayoutDrawDeviceFn = unsafe { CanvasLayoutDrawDeviceFn(0) }
+	post_draw_device_fn CanvasLayoutDrawDeviceFn = unsafe { CanvasLayoutDrawDeviceFn(0) }
+	click_fn            CanvasLayoutMouseFn      = unsafe { CanvasLayoutMouseFn(0) }
+	mouse_down_fn       CanvasLayoutMouseFn      = unsafe { CanvasLayoutMouseFn(0) }
+	mouse_up_fn         CanvasLayoutMouseFn      = unsafe { CanvasLayoutMouseFn(0) }
+	scroll_fn           CanvasLayoutScrollFn     = unsafe { CanvasLayoutScrollFn(0) }
+	mouse_move_fn       CanvasLayoutMouseMoveFn  = unsafe { CanvasLayoutMouseMoveFn(0) }
+	mouse_enter_fn      CanvasLayoutMouseMoveFn  = unsafe { CanvasLayoutMouseMoveFn(0) }
+	mouse_leave_fn      CanvasLayoutMouseMoveFn  = unsafe { CanvasLayoutMouseMoveFn(0) }
+	key_down_fn         CanvasLayoutKeyFn        = unsafe { CanvasLayoutKeyFn(0) }
+	char_fn             CanvasLayoutKeyFn        = unsafe { CanvasLayoutKeyFn(0) }
+	full_size_fn        CanvasLayoutSizeFn       = unsafe { CanvasLayoutSizeFn(0) }
+	bounding_change_fn  CanvasLayoutBoundingFn   = unsafe { CanvasLayoutBoundingFn(0) }
+	on_scroll_change    ScrollViewChangedFn      = unsafe { ScrollViewChangedFn(0) }
+	on_delegate         CanvasLayoutDelegateFn   = unsafe { nil }
+	parent              Layout                   = empty_stack
 mut:
 	// To keep track of original position
 	pos_ map[int]XYPos
@@ -91,9 +91,10 @@ mut:
 	debug_children_ids []string
 }
 
-[params]
+@[params]
 pub struct CanvasLayoutParams {
 	CanvasLayoutStyleParams
+pub:
 	id                string
 	width             int
 	height            int
@@ -122,7 +123,7 @@ pub struct CanvasLayoutParams {
 	on_char            CanvasLayoutKeyFn      = unsafe { nil }
 	full_size_fn       CanvasLayoutSizeFn     = unsafe { nil }
 	on_bounding_change CanvasLayoutBoundingFn = unsafe { nil }
-	on_scroll_change   ScrollViewChangedFn    = ScrollViewChangedFn(0)
+	on_scroll_change   ScrollViewChangedFn    = unsafe { ScrollViewChangedFn(0) }
 	on_delegate        CanvasLayoutDelegateFn = unsafe { nil }
 	children           []Widget
 }
@@ -143,35 +144,35 @@ pub fn canvas_layout(c CanvasLayoutParams) &CanvasLayout {
 // it can be viewed as a extended canvas
 pub fn canvas_plus(c CanvasLayoutParams) &CanvasLayout {
 	mut canvas := &CanvasLayout{
-		id: c.id
-		width: c.width
-		height: c.height
-		full_width: c.full_width
+		id:          c.id
+		width:       c.width
+		height:      c.height
+		full_width:  c.full_width
 		full_height: c.full_height
-		z_index: c.z_index
+		z_index:     c.z_index
 		// bg_radius: f32(c.bg_radius)
 		// bg_color: c.bg_color
-		is_focused: c.is_focused
-		clipping: c.clipping
-		justify: c.justify
-		style_params: c.CanvasLayoutStyleParams
-		active_evt_mngr: c.active_evt_mngr && !c.delegate_evt_mngr
-		delegate_evt_mngr: c.delegate_evt_mngr
-		draw_device_fn: c.on_draw
+		is_focused:          c.is_focused
+		clipping:            c.clipping
+		justify:             c.justify
+		style_params:        c.CanvasLayoutStyleParams
+		active_evt_mngr:     c.active_evt_mngr && !c.delegate_evt_mngr
+		delegate_evt_mngr:   c.delegate_evt_mngr
+		draw_device_fn:      c.on_draw
 		post_draw_device_fn: c.on_post_draw
-		click_fn: c.on_click
-		mouse_move_fn: c.on_mouse_move
-		mouse_enter_fn: c.on_mouse_enter
-		mouse_leave_fn: c.on_mouse_leave
-		mouse_down_fn: c.on_mouse_down
-		mouse_up_fn: c.on_mouse_up
-		key_down_fn: c.on_key_down
-		scroll_fn: c.on_scroll
-		full_size_fn: c.full_size_fn
-		bounding_change_fn: c.on_bounding_change
-		char_fn: c.on_char
-		on_scroll_change: c.on_scroll_change
-		on_delegate: c.on_delegate
+		click_fn:            c.on_click
+		mouse_move_fn:       c.on_mouse_move
+		mouse_enter_fn:      c.on_mouse_enter
+		mouse_leave_fn:      c.on_mouse_leave
+		mouse_down_fn:       c.on_mouse_down
+		mouse_up_fn:         c.on_mouse_up
+		key_down_fn:         c.on_key_down
+		scroll_fn:           c.on_scroll
+		full_size_fn:        c.full_size_fn
+		bounding_change_fn:  c.on_bounding_change
+		char_fn:             c.on_char
+		on_scroll_change:    c.on_scroll_change
+		on_delegate:         c.on_delegate
 	}
 	canvas.style_params.style = c.theme
 	if c.scrollview {
@@ -182,15 +183,15 @@ pub fn canvas_plus(c CanvasLayoutParams) &CanvasLayout {
 
 fn (mut c CanvasLayout) build(win &Window) {
 	// init for component
-	if c.on_build != BuildFn(0) {
+	if c.on_build != unsafe { BuildFn(0) } {
 		c.on_build(c, win)
 	}
 }
 
 fn (mut c CanvasLayout) init(parent Layout) {
 	c.parent = parent
-	ui := parent.get_ui()
-	c.ui = ui
+	u := parent.get_ui()
+	c.ui = u
 	c.init_size()
 	// IMPORTANT: Subscriber needs here to be before initialization of all its children
 	mut subscriber := parent.get_subscriber()
@@ -217,12 +218,12 @@ fn (mut c CanvasLayout) init(parent Layout) {
 		child.init(c)
 	}
 	// init for component
-	if c.on_init != InitFn(0) {
+	if c.on_init != unsafe { InitFn(0) } {
 		c.on_init(c)
 	}
 	c.load_style()
 
-	c.set_adjusted_size(ui)
+	c.set_adjusted_size(u)
 	c.set_children_pos()
 	c.set_root_layout()
 
@@ -252,7 +253,7 @@ fn (mut c CanvasLayout) set_root_layout() {
 }
 
 // TODO: documentation
-[manualfree]
+@[manualfree]
 pub fn (mut c CanvasLayout) cleanup() {
 	mut subscriber := c.parent.get_subscriber()
 	subscriber.unsubscribe_method(events.on_click, c)
@@ -284,7 +285,7 @@ pub fn (mut c CanvasLayout) cleanup() {
 }
 
 // TODO: documentation
-[unsafe]
+@[unsafe]
 pub fn (c &CanvasLayout) free() {
 	$if free ? {
 		print('canvas_layout ${c.id}')
@@ -318,7 +319,7 @@ fn canvas_layout_delegate(mut c CanvasLayout, e &gg.Event, window &Window) {
 	if !c.point_inside(e.mouse_x / c.ui.window.dpi_scale, e.mouse_y / c.ui.window.dpi_scale) {
 		return
 	}
-	if c.on_delegate != CanvasLayoutDelegateFn(0) {
+	if c.on_delegate != unsafe { CanvasLayoutDelegateFn(0) } {
 		c.on_delegate(c, e)
 	}
 }
@@ -341,11 +342,11 @@ fn canvas_layout_click(mut c CanvasLayout, e &MouseEvent, window &Window) {
 	if c.is_focused && c.click_fn != unsafe { nil } {
 		// c.is_focused
 		e2 := MouseEvent{
-			x: e.x - c.x - c.offset_x
-			y: e.y - c.y - c.offset_y
+			x:      e.x - c.x - c.offset_x
+			y:      e.y - c.y - c.offset_y
 			button: e.button
 			action: e.action
-			mods: e.mods
+			mods:   e.mods
 		}
 		// println('$c.id $e2.x $e2.y')
 		c.click_fn(c, e2)
@@ -361,11 +362,11 @@ fn canvas_layout_mouse_down(mut c CanvasLayout, e &MouseEvent, window &Window) {
 	}
 	if c.point_inside(e.x, e.y) && c.mouse_down_fn != unsafe { nil } {
 		e2 := MouseEvent{
-			x: e.x - c.x - c.offset_x
-			y: e.y - c.y - c.offset_y
+			x:      e.x - c.x - c.offset_x
+			y:      e.y - c.y - c.offset_y
 			button: e.button
 			action: e.action
-			mods: e.mods
+			mods:   e.mods
 		}
 		c.mouse_down_fn(c, e2)
 	}
@@ -377,11 +378,11 @@ fn canvas_layout_mouse_up(mut c CanvasLayout, e &MouseEvent, window &Window) {
 	}
 	if c.point_inside(e.x, e.y) && c.mouse_up_fn != unsafe { nil } {
 		e2 := MouseEvent{
-			x: e.x - c.x - c.offset_x
-			y: e.y - c.y - c.offset_y
+			x:      e.x - c.x - c.offset_x
+			y:      e.y - c.y - c.offset_y
 			button: e.button
 			action: e.action
-			mods: e.mods
+			mods:   e.mods
 		}
 		c.mouse_up_fn(c, e2)
 	}
@@ -393,8 +394,8 @@ fn canvas_layout_mouse_move(mut c CanvasLayout, e &MouseMoveEvent, window &Windo
 	}
 	if c.point_inside(e.x, e.y) && c.mouse_move_fn != unsafe { nil } {
 		e2 := MouseMoveEvent{
-			x: e.x - c.x - c.offset_x
-			y: e.y - c.y - c.offset_y
+			x:            e.x - c.x - c.offset_x
+			y:            e.y - c.y - c.offset_y
 			mouse_button: e.mouse_button
 		}
 		c.mouse_move_fn(c, e2)
@@ -404,10 +405,10 @@ fn canvas_layout_mouse_move(mut c CanvasLayout, e &MouseMoveEvent, window &Windo
 // TODO: documentation
 pub fn (mut c CanvasLayout) mouse_enter(e &MouseMoveEvent) {
 	// println("enter $c.id")
-	if c.mouse_enter_fn != CanvasLayoutMouseMoveFn(0) {
+	if c.mouse_enter_fn != unsafe { CanvasLayoutMouseMoveFn(0) } {
 		e2 := MouseMoveEvent{
-			x: e.x - c.x - c.offset_x
-			y: e.y - c.y - c.offset_y
+			x:            e.x - c.x - c.offset_x
+			y:            e.y - c.y - c.offset_y
 			mouse_button: e.mouse_button
 		}
 		c.mouse_enter_fn(c, e2)
@@ -417,10 +418,10 @@ pub fn (mut c CanvasLayout) mouse_enter(e &MouseMoveEvent) {
 // TODO: documentation
 pub fn (mut c CanvasLayout) mouse_leave(e &MouseMoveEvent) {
 	// println("leave $c.id")
-	if c.mouse_leave_fn != CanvasLayoutMouseMoveFn(0) {
+	if c.mouse_leave_fn != unsafe { CanvasLayoutMouseMoveFn(0) } {
 		e2 := MouseMoveEvent{
-			x: e.x - c.x - c.offset_x
-			y: e.y - c.y - c.offset_y
+			x:            e.x - c.x - c.offset_x
+			y:            e.y - c.y - c.offset_y
 			mouse_button: e.mouse_button
 		}
 		c.mouse_leave_fn(c, e2)
@@ -428,12 +429,12 @@ pub fn (mut c CanvasLayout) mouse_leave(e &MouseMoveEvent) {
 }
 
 fn canvas_layout_scroll(mut c CanvasLayout, e &ScrollEvent, window &Window) {
-	if c.scroll_fn != CanvasLayoutScrollFn(0) {
+	if c.scroll_fn != unsafe { CanvasLayoutScrollFn(0) } {
 		e2 := ScrollEvent{
 			mouse_x: e.mouse_x - c.x - c.offset_x
 			mouse_y: e.mouse_y - c.y - c.offset_y
-			x: e.x
-			y: e.y
+			x:       e.x
+			y:       e.y
 		}
 		c.scroll_fn(c, e2)
 	}
@@ -447,7 +448,7 @@ fn canvas_layout_key_down(mut c CanvasLayout, e &KeyEvent, window &Window) {
 	if !c.is_focused {
 		return
 	}
-	if c.key_down_fn != CanvasLayoutKeyFn(0) {
+	if c.key_down_fn != unsafe { CanvasLayoutKeyFn(0) } {
 		c.key_down_fn(c, *e)
 	}
 }
@@ -460,7 +461,7 @@ fn canvas_layout_char(mut c CanvasLayout, e &KeyEvent, window &Window) {
 	if !c.is_focused {
 		return
 	}
-	if c.char_fn != CanvasLayoutKeyFn(0) {
+	if c.char_fn != unsafe { CanvasLayoutKeyFn(0) } {
 		c.char_fn(c, *e)
 	}
 }
@@ -722,7 +723,7 @@ fn (mut c CanvasLayout) draw_device(mut d DrawDevice) {
 		}
 	}
 
-	if c.draw_device_fn != CanvasLayoutDrawDeviceFn(0) {
+	if c.draw_device_fn != unsafe { CanvasLayoutDrawDeviceFn(0) } {
 		c.draw_device_fn(mut d, c)
 	}
 	//$if cdraw_scroll ? {
@@ -776,7 +777,7 @@ fn (mut c CanvasLayout) draw_device(mut d DrawDevice) {
 	//	}
 	//}
 
-	if c.post_draw_device_fn != CanvasLayoutDrawDeviceFn(0) {
+	if c.post_draw_device_fn != unsafe { CanvasLayoutDrawDeviceFn(0) } {
 		c.post_draw_device_fn(mut *d, c)
 	}
 }
@@ -802,7 +803,7 @@ fn (mut c CanvasLayout) resize(width int, height int) {
 	c.propose_size(width, height)
 }
 
-fn (c &CanvasLayout) get_subscriber() &eventbus.Subscriber {
+fn (c &CanvasLayout) get_subscriber() &eventbus.Subscriber[string] {
 	parent := c.parent
 	return parent.get_subscriber()
 }

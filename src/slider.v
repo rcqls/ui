@@ -2,21 +2,19 @@ module ui
 
 import gx
 
-const (
-	slider_thumb_color             = gx.rgb(87, 153, 245)
-	slider_bg_color                = gx.rgb(219, 219, 219)
-	slider_bg_border_color         = gx.rgb(191, 191, 191)
-	slider_focused_bg_border_color = gx.rgb(255, 0, 0)
-)
+const slider_thumb_color = gx.rgb(87, 153, 245)
+const slider_bg_color = gx.rgb(219, 219, 219)
+const slider_bg_border_color = gx.rgb(191, 191, 191)
+const slider_focused_bg_border_color = gx.rgb(255, 0, 0)
 
 type SliderFn = fn (&Slider)
 
 pub enum Orientation {
-	vertical = 0
+	vertical   = 0
 	horizontal = 1
 }
 
-[heap]
+@[heap]
 pub struct Slider {
 pub mut:
 	id                   string
@@ -38,7 +36,7 @@ pub mut:
 	max                  int = 100
 	is_focused           bool
 	dragging             bool
-	on_value_changed     SliderFn
+	on_value_changed     SliderFn = unsafe { nil }
 	focus_on_thumb_only  bool
 	rev_min_max_pos      bool
 	thumb_in_track       bool
@@ -54,9 +52,10 @@ pub mut:
 	component voidptr
 }
 
-[params]
+@[params]
 pub struct SliderParams {
 	SliderStyleParams
+pub:
 	id                   string
 	width                int
 	height               int
@@ -66,10 +65,10 @@ pub struct SliderParams {
 	max                  int
 	val                  f32
 	orientation          Orientation
-	theme                string = no_style
-	radius               int    = 5
-	on_value_changed     SliderFn
-	focus_on_thumb_only  bool = true
+	theme                string   = no_style
+	radius               int      = 5
+	on_value_changed     SliderFn = unsafe { nil }
+	focus_on_thumb_only  bool     = true
 	rev_min_max_pos      bool
 	thumb_in_track       bool
 	track_line_displayed bool = true
@@ -78,24 +77,24 @@ pub struct SliderParams {
 
 pub fn slider(c SliderParams) &Slider {
 	mut s := &Slider{
-		id: c.id
-		height: c.height
-		width: c.width
-		slider_size: c.slider_size
-		min: c.min
-		max: c.max
-		val: c.val
-		orientation: c.orientation
-		on_value_changed: c.on_value_changed
-		focus_on_thumb_only: c.focus_on_thumb_only
-		rev_min_max_pos: c.rev_min_max_pos
-		thumb_in_track: c.thumb_in_track
+		id:                   c.id
+		height:               c.height
+		width:                c.width
+		slider_size:          c.slider_size
+		min:                  c.min
+		max:                  c.max
+		val:                  c.val
+		orientation:          c.orientation
+		on_value_changed:     c.on_value_changed
+		focus_on_thumb_only:  c.focus_on_thumb_only
+		rev_min_max_pos:      c.rev_min_max_pos
+		thumb_in_track:       c.thumb_in_track
 		track_line_displayed: c.track_line_displayed
-		ui: 0
-		z_index: c.z_index
-		entering: c.entering
-		style_params: c.SliderStyleParams
-		radius: c.radius
+		ui:                   unsafe { nil }
+		z_index:              c.z_index
+		entering:             c.entering
+		style_params:         c.SliderStyleParams
+		radius:               c.radius
 	}
 	s.style_params.style = c.theme
 	s.set_thumb_size()
@@ -110,8 +109,8 @@ pub fn slider(c SliderParams) &Slider {
 
 fn (mut s Slider) init(parent Layout) {
 	s.parent = parent
-	ui := parent.get_ui()
-	s.ui = ui
+	u := parent.get_ui()
+	s.ui = u
 	s.load_style()
 	mut subscriber := parent.get_subscriber()
 	subscriber.subscribe_method(events.on_click, slider_click, s)
@@ -127,7 +126,7 @@ fn (mut s Slider) init(parent Layout) {
 	}
 }
 
-[manualfree]
+@[manualfree]
 pub fn (mut s Slider) cleanup() {
 	mut subscriber := s.parent.get_subscriber()
 	subscriber.unsubscribe_method(events.on_click, s)
@@ -144,7 +143,7 @@ pub fn (mut s Slider) cleanup() {
 	unsafe { s.free() }
 }
 
-[unsafe]
+@[unsafe]
 pub fn (s &Slider) free() {
 	$if free ? {
 		print('slider ${s.id}')
@@ -295,7 +294,7 @@ fn slider_key_down(mut s Slider, e &KeyEvent, zzz voidptr) {
 		}
 		else {}
 	}
-	if s.on_value_changed != SliderFn(0) {
+	if s.on_value_changed != unsafe { SliderFn(0) } {
 		s.on_value_changed(s)
 	}
 }
@@ -428,7 +427,7 @@ fn (mut s Slider) change_value(x int, y int) {
 	} else if int(s.val) > s.max {
 		s.val = f32(s.max)
 	}
-	if s.on_value_changed != SliderFn(0) {
+	if s.on_value_changed != unsafe { SliderFn(0) } {
 		s.on_value_changed(s)
 	}
 }

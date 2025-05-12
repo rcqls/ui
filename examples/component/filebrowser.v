@@ -2,21 +2,19 @@ import ui
 import ui.component as uic
 // import gx
 
-const (
-	win_width  = 800
-	win_height = 600
-)
+const win_width = 800
+const win_height = 600
 
 fn main() {
 	window := ui.window(
-		width: win_width
-		height: win_height
-		title: 'V UI: File Browser'
+		width:          win_width
+		height:         win_height
+		title:          'V UI: File Browser'
 		native_message: false
-		mode: .resizable
-		layout: uic.filebrowser_stack(
-			id: 'fb'
-			on_click_ok: on_click_ok
+		mode:           .resizable
+		layout:         uic.filebrowser_stack(
+			id:              'fb'
+			on_click_ok:     on_click_ok
 			on_click_cancel: on_click_cancel
 		)
 	)

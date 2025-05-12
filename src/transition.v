@@ -1,11 +1,11 @@
 // Copyright (c) 2020-2022 Leah Lundqvist. All rights reserved.
-// Use of this source code is governed by a GPL license
+// Use of this source code is governed by a MIT license
 // that can be found in the LICENSE file.
 module ui
 
 import time
 
-[heap]
+@[heap]
 pub struct Transition {
 mut:
 	// pub:
@@ -18,8 +18,8 @@ mut:
 	started_time     i64
 	duration         i64
 	animating        bool
-	easing           EasingFunction
-	parent           Layout = empty_stack
+	easing           EasingFunction = unsafe { nil }
+	parent           Layout         = empty_stack
 	start_value      int
 	last_draw_target int
 	ui               &UI = unsafe { nil }
@@ -30,41 +30,42 @@ pub mut:
 	animated_value &int
 }
 
-[params]
+@[params]
 pub struct TransitionParams {
+pub:
 	z_index        int
 	duration       int
-	animated_value &int = unsafe { nil }
-	easing         EasingFunction
-	ref            &Transition = unsafe { nil }
+	animated_value &int           = unsafe { nil }
+	easing         EasingFunction = unsafe { nil }
+	ref            &Transition    = unsafe { nil }
 }
 
 pub fn transition(c TransitionParams) &Transition {
 	mut transition := &Transition{
 		last_draw_time: time.ticks()
-		started_time: 0
-		duration: c.duration
-		animating: false
-		easing: c.easing
-		ui: 0
-		animated_value: 0
-		z_index: c.z_index
+		started_time:   0
+		duration:       c.duration
+		animating:      false
+		easing:         c.easing
+		ui:             unsafe { nil }
+		animated_value: unsafe { nil }
+		z_index:        c.z_index
 	}
 	return transition
 }
 
 fn (mut t Transition) init(parent Layout) {
 	t.parent = parent
-	ui := parent.get_ui()
-	t.ui = ui
+	u := parent.get_ui()
+	t.ui = u
 }
 
-[manualfree]
+@[manualfree]
 pub fn (mut t Transition) cleanup() {
 	unsafe { t.free() }
 }
 
-[unsafe]
+@[unsafe]
 pub fn (t &Transition) free() {
 	$if free ? {
 		print('transition ${t.id}')
@@ -128,7 +129,9 @@ fn (mut t Transition) draw_device(mut d DrawDevice) {
 			mapped = t.target_value
 		}
 		// Update the target value and request a redraw
-		(*t.animated_value) = mapped
+		unsafe {
+			(*t.animated_value) = mapped
+		}
 		t.ui.window.refresh()
 		// Set last_draw_target to check for target_value changes between renders.
 		t.last_draw_target = t.target_value

@@ -5,19 +5,20 @@ import gx
 
 type ColorButtonFn = fn (b &ColorButtonComponent)
 
-[heap]
+@[heap]
 pub struct ColorButtonComponent {
 pub mut:
-	widget     &ui.Button
-	bg_color   gx.Color = gx.white
+	widget     &ui.Button = unsafe { nil }
+	bg_color   gx.Color   = gx.white
 	alpha      int
-	on_click   ColorButtonFn
-	on_changed ColorButtonFn
+	on_click   ColorButtonFn = unsafe { ColorButtonFn(0) }
+	on_changed ColorButtonFn = unsafe { ColorButtonFn(0) }
 	left_side  bool
 }
 
-[params]
+@[params]
 pub struct ColorButtonParams {
+pub:
 	id           string
 	text         string
 	height       int
@@ -28,31 +29,31 @@ pub struct ColorButtonParams {
 	radius       f64 // = 5.0
 	padding      f64
 	left_side    bool
-	bg_color     &gx.Color = unsafe { nil }
-	on_click     ColorButtonFn
-	on_changed   ColorButtonFn
+	bg_color     &gx.Color     = unsafe { nil }
+	on_click     ColorButtonFn = unsafe { ColorButtonFn(0) }
+	on_changed   ColorButtonFn = unsafe { ColorButtonFn(0) }
 }
 
 // TODO: documentation
 pub fn colorbutton(c ColorButtonParams) &ui.Button {
 	mut b := &ui.Button{
-		id: c.id
-		width_: c.width
-		height_: c.height
-		z_index: c.z_index
+		id:       c.id
+		width_:   c.width
+		height_:  c.height
+		z_index:  c.z_index
 		bg_color: c.bg_color
 		// theme_cfg: ui.no_theme
-		tooltip: ui.TooltipMessage{c.tooltip, c.tooltip_side}
-		on_click: colorbutton_click
+		tooltip:      ui.TooltipMessage{c.tooltip, c.tooltip_side}
+		on_click:     colorbutton_click
 		style_params: ui.button_style(radius: f32(c.radius))
-		padding: f32(c.padding)
+		padding:      f32(c.padding)
 		// ui: 0
 	}
 	cbc := &ColorButtonComponent{
-		widget: b
-		on_click: c.on_click
+		widget:     b
+		on_click:   c.on_click
 		on_changed: c.on_changed
-		left_side: c.left_side
+		left_side:  c.left_side
 	}
 	if unsafe { b.bg_color == 0 } {
 		b.bg_color = &cbc.bg_color
@@ -95,7 +96,7 @@ fn colorbutton_click(mut b ui.Button) {
 		}
 	}
 	// on_click initialization if necessary
-	if cbc.on_click != ColorButtonFn(0) {
+	if cbc.on_click != unsafe { ColorButtonFn(0) } {
 		cbc.on_click(cbc)
 	}
 }

@@ -3,7 +3,7 @@ module ui
 import gx
 import gg
 
-interface DrawDevice {
+pub interface DrawDevice {
 	// text style
 	has_text_style() bool
 	set_text_style(font_name string, font_path string, size int, color gx.Color, align int, vertical_align int)
@@ -16,8 +16,8 @@ interface DrawDevice {
 	text_width(string) int
 	text_height(string) int
 	// drawing methods
-	draw_pixel(x f32, y f32, c gx.Color)
-	draw_pixels(points []f32, c gx.Color)
+	draw_pixel(x f32, y f32, c gx.Color, params gg.DrawPixelConfig)
+	draw_pixels(points []f32, c gx.Color, params gg.DrawPixelConfig)
 	draw_image(x f32, y f32, width f32, height f32, img &gg.Image)
 	draw_triangle_empty(x f32, y f32, x2 f32, y2 f32, x3 f32, y3 f32, color gx.Color)
 	draw_triangle_filled(x f32, y f32, x2 f32, y2 f32, x3 f32, y3 f32, color gx.Color)

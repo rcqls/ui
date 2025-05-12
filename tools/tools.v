@@ -5,15 +5,13 @@ import ui.component as uic
 import os
 import gx
 
-const (
-	block_format_delim = {
-		'start': '[<'
-		'stop':  '>]'
-	}
-)
+const block_format_delim = {
+	'start': '[<'
+	'stop':  '>]'
+}
 
 fn block_format(block_name string) string {
-	return tools.block_format_delim['start'] + block_name + tools.block_format_delim['stop']
+	return block_format_delim['start'] + block_name + block_format_delim['stop']
 }
 
 // treedir to determine menu of _ui.vv files
@@ -49,8 +47,9 @@ pub fn tree_layout(layout ui.Layout) uic.Tree {
 	return t
 }
 
-[params]
+@[params]
 pub struct TreeViewLayoutParams {
+pub:
 	id     string    = 'tvlc'
 	layout ui.Layout = ui.empty_stack
 	widget ui.Widget = ui.empty_stack
@@ -62,7 +61,7 @@ pub struct TreeViewLayoutParams {
 	// folder_only  bool
 	// filter_types []string
 	// hidden_files bool
-	bg_color gx.Color = gx.white // gx.hex(0xfcf4e4ff)
+	bg_color gx.Color            = gx.white // gx.hex(0xfcf4e4ff)
 	on_click uic.TreeViewClickFn = uic.TreeViewClickFn(0)
 }
 
@@ -77,10 +76,10 @@ pub fn layouttree_stack(p TreeViewLayoutParams) &ui.Stack {
 		p.layout
 	}
 	return uic.treeview_stack(
-		id: p.id
-		trees: [tree_layout(layout)]
+		id:       p.id
+		trees:    [tree_layout(layout)]
 		on_click: p.on_click
-		mode: 'tools.layout'
+		mode:     'tools.layout'
 	)
 }
 
@@ -93,10 +92,10 @@ pub fn layouttree_reopen(mut tv uic.TreeViewComponent, layout_widget ui.Widget) 
 		if mut lp is ui.Stack {
 			lp.remove(at: 0)
 			lp.add(
-				at: 0
+				at:    0
 				child: layouttree_stack(
-					id: tv.id
-					widget: layout_widget
+					id:       tv.id
+					widget:   layout_widget
 					on_click: tv.on_click
 				)
 			)
